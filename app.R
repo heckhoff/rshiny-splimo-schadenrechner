@@ -16,6 +16,8 @@ ui <- fluidPage(
   # Sidebar with a slider input for number of bins
   sidebarLayout(
     sidebarPanel(
+      id = "side-panel",
+      
       numericInput("d6",
                    "Anzahl W6 Würfel",
                    min = 0,
@@ -41,7 +43,9 @@ ui <- fluidPage(
       ),
       textOutput("weapon"),
       br(),
-      textOutput("mean_dmg")
+      textOutput("mean_dmg"),
+      br(),
+      actionButton("reset_input", "Eingabe zurücksetzen")
     ),
     
     # Show a plot of the generated distribution
@@ -99,6 +103,10 @@ server <- function(input, output) {
       show("mean_dmg")
       show("dist_plot")
     }
+  })
+  
+  observeEvent(input$reset_input, {
+    shinyjs::reset("side-panel")
   })
 }
 
