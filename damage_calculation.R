@@ -6,20 +6,27 @@ options(scipen = 999)
 # https://anydice.com/
 # https://www.dungeonsolvers.com/2018/03/29/average-dice-roll/
 # https://stats.stackexchange.com/questions/177163/what-is-the-distribution-for-various-polyhedral-dice-all-rolled-at-once
+# https://stackoverflow.com/questions/44339070/calculating-population-standard-deviation-in-r
 
-# TODO alle Waffenwürfel
-# TODO Flat Bonus
+# Offen:
 # TODO Schadensreduktion (Slider)
 # TODO Waffenmerkmale: Kritisch, Scharf, Exakt
 # TODO Mondzeichen
 # TODO Standardabweichungen
-# TODO Kumulative Wahrscheinlichkeiten (min. X Schaden, Funktionsparameter?)
-# TODO Reverse kumulativ (max. X Schaden)
 # TODO Waffengeschwindigkeit
 # TODO Gegnersimulation
 # TODO Waffenauswahl (Presets?)
 # TODO Trefferwahrscheinlichkeit
 # TODO Vergleichsfunktion mehrere Plots / ineinander
+# TODO Code kommentieren u. dokumentieren
+# TODO README schreiben
+
+# Fertig:
+# TODO alle Waffenwürfel
+# TODO Flat Bonus
+# TODO Kumulative Wahrscheinlichkeiten (min. X Schaden, Funktionsparameter?)
+# TODO Reverse kumulativ (max. X Schaden)
+
 
 # Dice Calculations ----
 
