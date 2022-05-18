@@ -49,9 +49,30 @@ calc_mean_damage <- function(n_6s = 0,
   return(mean_damage)
 }
 
+create_prob_vec <-
+  function(n_sides,
+           att_exact = 0,
+           att_critical = 0) {
+
+    seq <-
+      c(1 + att_exact, seq.int(2, n_sides - 1), n_sides + att_critical)
+    p <- 1 / n_sides
+    
+    die <- data.table(eyes = seq, prob = p)
+    die <- die[order(eyes), .(prob = sum(prob)), by = eyes]
+    
+    zeros <-
+      data.table(eyes = seq.int(0, max(die[, eyes])), prob = rep(0))
+    die <- rbind(die, zeros[!die, on = "eyes"])
+    setorder(die)
+    
+    return(die[, prob])
+  }
+
 convolve_vecs <- function(n_6s = 0,
                           n_10s = 0) {
   p6s <- c(0, rep(1/6, 6)) # TODO Funktion
+
   p10s <- c(0, rep(1/10, 10))
   
   vecs <- c(rep(list(p6s), n_6s), rep(list(p10s), n_10s))
