@@ -8,12 +8,18 @@ options(scipen = 999)
 # https://stats.stackexchange.com/questions/177163/what-is-the-distribution-for-various-polyhedral-dice-all-rolled-at-once
 # https://stackoverflow.com/questions/44339070/calculating-population-standard-deviation-in-r
 
+# To-Dos ----
 # Offen:
 # TODO Schadensreduktion (Slider)
-# TODO Waffenmerkmale: Kritisch, Scharf, Exakt
-# TODO Mondzeichen
+# TODO Waffenmerkmale: Kritisch, Scharf, Exakt, Durchdringung
+# TODO Code ändern für Waffenmerkmale: Convolve zweischrittig
+  # Prob berechnen für 1d(mod. Augensequenz), z.B. 1W6 Scharf 2 (3,2,3,4,5,6)
+  # Prob als Vektor ab 0 für Convolve nutzen, 
+  # z.B. 1W6 Scharf 2 (0,0,1/6,2/6,1/6,1/6,1/6)
+  # Schadenssequenz der Output-Tabelle ableiten von Convolve mit Exklusion von 0
 # TODO Standardabweichungen
 # TODO Waffengeschwindigkeit
+# TODO Erfolgsgrad-Bestimmungen - Wuchtangriff (Merkmal wuchtig)
 # TODO Gegnersimulation
 # TODO Waffenauswahl (Presets?)
 # TODO Trefferwahrscheinlichkeit
@@ -45,8 +51,8 @@ calc_mean_damage <- function(n_6s = 0,
 
 convolve_vecs <- function(n_6s = 0,
                           n_10s = 0) {
-  p6s <- c(0, rep(1 / 6, 6))
-  p10s <- c(0, rep(1 / 10, 10))
+  p6s <- c(0, rep(1/6, 6)) # TODO Funktion
+  p10s <- c(0, rep(1/10, 10))
   
   vecs <- c(rep(list(p6s), n_6s), rep(list(p10s), n_10s))
   
