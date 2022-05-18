@@ -41,15 +41,6 @@ calc_dice_avg <- function(sides, n) {
   ((sides + 1) / 2) * n
 }
 
-calc_mean_damage <- function(n_6s = 0,
-                             n_10s = 0,
-                             flat_mod = 0) {
-  avg_roll_6s <- calc_dice_avg(6, n_6s)
-  avg_roll_10s <- calc_dice_avg(10, n_10s)
-  mean_damage <- (avg_roll_6s + avg_roll_10s + flat_mod)
-  return(mean_damage)
-}
-
 create_prob_vec <-
   function(n_sides,
            att_exact = 0,
@@ -122,22 +113,21 @@ create_weapon_txt <- function(n_6s = 0,
 
 create_prob_table <- function(n_6s = 0,
                               n_10s = 0,
-                              flat_mod = 0) {
-  
-  n_dice <- n_6s + n_10s
-  min_damage <- n_6s + n_10s + flat_mod
-  max_damage <- (n_6s * 6) + (n_10s * 10) + flat_mod
-  
-  # mean_damage <-
-  #   calc_mean_damage(n_6s = n_6s,
-  #                    n_10s = n_10s,
-  #                    flat_mod = flat_mod)
+                              flat_mod = 0,
+                              att_exact = 0,
+                              att_critical = 0) {
   
   probability <-
-    convolve_vecs(n_6s = n_6s, n_10s = n_10s)[-(1:n_dice)]
-  
+    convolve_vecs(
+      n_6s = n_6s,
+      n_10s = n_10s,
+      att_exact = att_exact,
+      att_critical = att_critical
+    )
+
   prob_table <-
-    data.table(damage = seq.int(min_damage, max_damage), probability)
+    data.table(damage = seq.int(0, length(probability) - 1), probability)
+  prob_table[, damage := damage + flat_mod]
   prob_table[damage < 0, damage := 0]
   
   prob_table[, cum_prob_min := rev(cumsum(rev(probability)))]
@@ -145,5 +135,10 @@ create_prob_table <- function(n_6s = 0,
   
   prob_table[, cum_prob_max := cumsum(probability)]
   prob_table[damage == 0, cum_prob_max := last(cum_prob_max) / .N]
+  
+  min <- prob_table[probability != 0, min(damage)]
+  max <- prob_table[probability != 0, max(damage)]
+  
+  prob_table <- prob_table[damage %between% c(min, max)]
   return(prob_table)
 }

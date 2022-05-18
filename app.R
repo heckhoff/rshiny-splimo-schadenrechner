@@ -9,6 +9,7 @@ source("damage_calculation.R")
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   useShinyjs(),
+  tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
   
   # Application title
   titlePanel("Splittermond Waffenschadenrechner"),
@@ -18,20 +19,42 @@ ui <- fluidPage(
     sidebarPanel(
       id = "side-panel",
       
-      numericInput("d6",
-                   "Anzahl W6 Würfel",
-                   min = 0,
-                   max = 8,
-                   value = 0),
-      numericInput("d10",
-                   "Anzahl W10 Würfel",
-                   min = 0,
-                   max = 5,
-                   value = 0),
+      numericInput(
+        "d6",
+        "Anzahl W6 Würfel",
+        min = 0,
+        max = 8,
+        value = 0
+      ),
+      numericInput(
+        "d10",
+        "Anzahl W10 Würfel",
+        min = 0,
+        max = 5,
+        value = 0
+      ),
       numericInput("flat",
                    "Modifikator",
                    value = 0),
       br(),
+      
+      h4("Waffenmerkmale:"),
+      sliderInput(
+        "exact",
+        "Exakt",
+        min = 0,
+        max = 5,
+        value = 0
+      ),
+      sliderInput(
+        "critical",
+        "Kritisch",
+        min = 0,
+        max = 5,
+        value = 0
+      ),
+      br(),
+      
       selectInput(
         "y_axis",
         "Darstellung",
@@ -55,19 +78,38 @@ ui <- fluidPage(
 # Backend ----
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  
+  prob_table <- reactive(create_prob_table(
+    n_6s = input$d6,
+    n_10s = input$d10,
+    flat_mod = input$flat,
+    att_exact = input$exact,
+    att_critical = input$critical
+  )
+  )
   # Print Selected Weapon
-  weapon_txt <- reactive(paste("Ausgewählte Waffe:", create_weapon_txt(input$d6, input$d10, input$flat)))
-  output$weapon <- renderText({weapon_txt()})
+  weapon_txt <-
+    reactive(paste(
+      "Ausgewählte Waffe:",
+      create_weapon_txt(input$d6, input$d10, input$flat)
+    ))
+  output$weapon <- renderText({
+    weapon_txt()
+  })
   
   # Print Average Damage
-  mean_damage <- reactive(paste("Durchschnittlicher Schaden:", calc_mean_damage(input$d6, input$d10, input$flat)))
-  output$mean_dmg <- renderText({mean_damage()})
+  mean_damage <-
+    reactive(paste(
+      "Durchschnittlicher Schaden:",
+      round(prob_table()[, sum(damage * probability)], 2)
+    ))
+  output$mean_dmg <- renderText({
+    mean_damage()
+  })
   
   # Plot Probability Distribution
   output$dist_plot <- renderPlot({
     # generate bins based on input$bins from ui.R
-    x <- create_prob_table(input$d6, input$d10, input$flat)
+    x <- prob_table()
     # bins <- seq(min(x), max(x), length.out = input$bins + 1)
     x_axis_labels <- min(x[, damage]):max(x[, damage])
     ggplot(data = x, aes(x = damage, y = switch(
@@ -86,7 +128,7 @@ server <- function(input, output) {
       scale_y_continuous(
         labels = function(x)
           paste0(x * 100, "%"),
-        breaks=pretty_breaks(n = 10)
+        breaks = pretty_breaks(n = 10)
       ) +
       theme_classic(base_size = 20)
     # draw the histogram with the specified number of bins
