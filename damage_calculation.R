@@ -17,6 +17,7 @@ options(scipen = 999)
   # Prob als Vektor ab 0 für Convolve nutzen, 
   # z.B. 1W6 Scharf 2 (0,0,1/6,2/6,1/6,1/6,1/6)
   # Schadenssequenz der Output-Tabelle ableiten von Convolve mit Exklusion von 0
+# TODO Waffenbeschreibung um Liste "Merkmale: Scharf 1, Kritisch 2, ..." ergänzen
 # TODO Standardabweichungen
 # TODO Waffengeschwindigkeit
 # TODO Erfolgsgrad-Bestimmungen - Wuchtangriff (Merkmal wuchtig)
@@ -70,10 +71,22 @@ create_prob_vec <-
   }
 
 convolve_vecs <- function(n_6s = 0,
-                          n_10s = 0) {
-  p6s <- c(0, rep(1/6, 6)) # TODO Funktion
-
-  p10s <- c(0, rep(1/10, 10))
+                          n_10s = 0,
+                          att_exact = 0,
+                          att_critical = 0) {
+  if (n_6s > 0) {
+    p6s <-
+      create_prob_vec(6, att_exact = att_exact, att_critical = att_critical)
+  } else {
+    p6s <- NA
+  }
+  
+  if (n_10s > 0) {
+    p10s <-
+      create_prob_vec(10, att_exact = att_exact, att_critical = att_critical)
+  } else {
+    p10s <- NA
+  }
   
   vecs <- c(rep(list(p6s), n_6s), rep(list(p10s), n_10s))
   
