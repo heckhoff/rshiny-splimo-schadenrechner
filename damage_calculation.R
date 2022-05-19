@@ -137,7 +137,9 @@ create_prob_table <- function(n_d6 = 0,
                               flat_mod = 0,
                               att_exact = 0,
                               att_sharp = 0,
-                              att_critical = 0) {
+                              att_critical = 0,
+                              att_penetration = 0,
+                              damage_reduction = 0) {
   
   probability <-
     convolve_vecs(
@@ -147,10 +149,12 @@ create_prob_table <- function(n_d6 = 0,
       att_sharp = att_sharp,
       att_critical = att_critical
     )
-
+  
+  damage_reduction <- pmax(0, damage_reduction - att_penetration)
+  
   prob_table <-
     data.table(damage = seq.int(0, length(probability) - 1), probability)
-  prob_table[, damage := damage + flat_mod]
+  prob_table[, damage := damage + flat_mod - damage_reduction]
   prob_table[damage < 0, damage := 0]
   
   prob_table[, cum_prob_min := rev(cumsum(rev(probability)))]
