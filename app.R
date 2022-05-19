@@ -1,5 +1,6 @@
 library(shiny)
 library(shinyjs)
+library(shinyBS)
 library(ggplot2)
 library(scales)
 
@@ -62,6 +63,17 @@ ui <- fluidPage(
         max = 5,
         value = 0
       ),
+      bsTooltip(id = "exact", title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnissezählen für den Schadenswurf.", 
+                trigger = "hover"),
+      sliderInput(
+        "sharp",
+        "Scharf",
+        min = 0,
+        max = 5,
+        value = 0
+      ),
+      bsTooltip(id = "sharp", title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
+                trigger = "hover"),
       sliderInput(
         "critical",
         "Kritisch",
@@ -69,6 +81,8 @@ ui <- fluidPage(
         max = 5,
         value = 0
       ),
+      bsTooltip(id = "critical", title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.", 
+                trigger = "hover"),
       br(),
       
       selectInput(
@@ -80,7 +94,7 @@ ui <- fluidPage(
         )
       ),
       br(),
-      actionButton("reset_input", "Eingabe zurücksetzen")
+      actionButton("reset_input", "Eingabe zurücksetzen"),
     ),
     
     # Show a plot of the generated distribution
@@ -94,10 +108,11 @@ ui <- fluidPage(
 server <- function(input, output) {
   prob_table <- reactive(
     create_prob_table(
-      n_6s = input$d6,
-      n_10s = input$d10,
+      n_d6 = input$d6,
+      n_d10 = input$d10,
       flat_mod = input$flat,
       att_exact = input$exact,
+      att_sharp = input$sharp,
       att_critical = input$critical
     )
   )
@@ -206,6 +221,7 @@ server <- function(input, output) {
   observeEvent(input$reset_input, {
     shinyjs::reset("side-panel")
   })
+  
 }
 
 # Run the application
