@@ -165,7 +165,10 @@ ui <- fluidPage(
 # Backend ----
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  prob_table <- reactive(
+  # observe({
+  #   if (all(c(input$d6, input$d10) == 0)) {
+  prob_table <- reactive({
+    req(any(c(input$d6, input$d10) != 0))
     create_prob_table(
       n_d6 = input$d6,
       n_d10 = input$d10,
@@ -176,7 +179,9 @@ server <- function(input, output) {
       att_penetration = input$penetration,
       damage_reduction = input$dmg_reduction
     )
-  )
+  })
+  #   }
+  # })
   # Textoutput ----
   # Print Selected Weapon
   print_weapon_txt <-
