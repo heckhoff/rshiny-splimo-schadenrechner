@@ -36,6 +36,22 @@ ui <- fluidPage(
       numericInput("flat",
                    "Modifikator",
                    value = 0),
+      
+      numericInput(
+        "speed",
+        "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
+        min = 1,
+        value = 0
+      ),
+      
+      br(),
+      textOutput("weapon"),
+      br(),
+      textOutput("mean_dmg"),
+      br(),
+      textOutput("mean_dmg_per_tick"),
+      br(),
+      textOutput("sd_dmg"),
       br(),
       
       h4("Waffenmerkmale:"),
@@ -57,34 +73,33 @@ ui <- fluidPage(
       
       selectInput(
         "y_axis",
-        "Darstellung",
+        "Darstellung der kumulierten Grafik",
         choices = list(
-          "exakte Wahrscheinlichkeit" = "prob",
-          "minimaler Schaden (kumuliert)" = "cum_prob_min",
-          "maximaler Schaden (kumuliert)" = "cum_prob_max"
+          "minimaler Schaden" = "cum_prob_min",
+          "maximaler Schaden" = "cum_prob_max"
         )
       ),
-      textOutput("weapon"),
-      br(),
-      textOutput("mean_dmg"),
       br(),
       actionButton("reset_input", "Eingabe zurücksetzen")
     ),
     
     # Show a plot of the generated distribution
-    mainPanel(plotOutput("dist_plot"))
+    mainPanel(plotOutput("dist_plot"),
+              br(),
+              plotOutput("cum_dist_plot"))
   )
 )
 # Backend ----
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  prob_table <- reactive(create_prob_table(
-    n_6s = input$d6,
-    n_10s = input$d10,
-    flat_mod = input$flat,
-    att_exact = input$exact,
-    att_critical = input$critical
-  )
+  prob_table <- reactive(
+    create_prob_table(
+      n_6s = input$d6,
+      n_10s = input$d10,
+      flat_mod = input$flat,
+      att_exact = input$exact,
+      att_critical = input$critical
+    )
   )
   # Print Selected Weapon
   weapon_txt <-
@@ -98,26 +113,41 @@ server <- function(input, output) {
   
   # Print Average Damage
   mean_damage <-
-    reactive(paste(
-      "Durchschnittlicher Schaden:",
-      round(prob_table()[, sum(damage * probability)], 2)
-    ))
+    reactive(paste("Durchschn. Schaden:",
+                   round(prob_table()[, sum(damage * probability)], 2)))
   output$mean_dmg <- renderText({
     mean_damage()
   })
   
+  # Print Average Damage per Tick
+  mean_damage_per_tick <-
+    reactive(paste(
+      "Durchschn. Schaden pro Tick:",
+      fifelse(input$speed != 0, yes =
+      round(prob_table()[, sum(damage * probability)] / input$speed, 2),
+            no = 0)
+    ))
+  output$mean_dmg_per_tick <- renderText({
+    mean_damage_per_tick()
+  })
+  
+  # Print Damage Standard Deviation
+  sd_damage <-
+    reactive(paste("Durchschnittliche Abweichung:",
+                   round(prob_table()
+                         [, sqrt(sum((damage - sum(
+                           damage * probability
+                         ))
+                         ^ 2 * probability))], 2)))
+  output$sd_dmg <- renderText({
+    sd_damage()
+  })
+  
   # Plot Probability Distribution
   output$dist_plot <- renderPlot({
-    # generate bins based on input$bins from ui.R
     x <- prob_table()
-    # bins <- seq(min(x), max(x), length.out = input$bins + 1)
     x_axis_labels <- min(x[, damage]):max(x[, damage])
-    ggplot(data = x, aes(x = damage, y = switch(
-      input$y_axis,
-      prob = probability,
-      cum_prob_min = cum_prob_min,
-      cum_prob_max = cum_prob_max
-    ))) +
+    ggplot(data = x, aes(x = damage, y = probability)) +
       geom_bar(stat = "identity",
                color = "blueviolet",
                fill = "dodgerblue1") +
@@ -131,8 +161,34 @@ server <- function(input, output) {
         breaks = pretty_breaks(n = 10)
       ) +
       theme_classic(base_size = 20)
-    # draw the histogram with the specified number of bins
-    # hist(x, breaks = nrows(x), col = 'darkgray', border = 'white')
+  })
+  
+  # Plot Cumulative Probability Distribution
+  output$cum_dist_plot <- renderPlot({
+    x <- prob_table()
+    x_axis_labels <- min(x[, damage]):max(x[, damage])
+    ggplot(data = x, aes(x = damage, y = switch(
+      input$y_axis,
+      cum_prob_min = cum_prob_min,
+      cum_prob_max = cum_prob_max
+    ))) +
+      geom_bar(stat = "identity",
+               color = "blueviolet",
+               fill = "dodgerblue1") +
+      ggtitle(switch(
+        input$y_axis,
+        cum_prob_min = "Kumulierte Wahrscheinlichkeiten (Mindestschaden)",
+        cum_prob_max = "Kumulierte Wahrscheinlichkeiten (Maximalschaden)"
+      )) +
+      xlab("Schaden") +
+      ylab("Wahrscheinlichkeit in %") +
+      scale_x_continuous(labels = x_axis_labels, breaks = x_axis_labels) +
+      scale_y_continuous(
+        labels = function(x)
+          paste0(x * 100, "%"),
+        breaks = pretty_breaks(n = 10)
+      ) +
+      theme_classic(base_size = 20)
   })
   
   observe({

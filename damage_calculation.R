@@ -11,12 +11,10 @@ options(scipen = 999)
 # To-Dos ----
 # Offen:
 # TODO Schadensreduktion (Slider)
-# TODO Waffenmerkmale: Kritisch, Scharf, Exakt, Durchdringung
-# TODO Code ändern für Waffenmerkmale: Convolve zweischrittig
-  # Prob berechnen für 1d(mod. Augensequenz), z.B. 1W6 Scharf 2 (3,2,3,4,5,6)
-  # Prob als Vektor ab 0 für Convolve nutzen, 
-  # z.B. 1W6 Scharf 2 (0,0,1/6,2/6,1/6,1/6,1/6)
-  # Schadenssequenz der Output-Tabelle ableiten von Convolve mit Exklusion von 0
+# TODO Plot Durchschnittsschaden ggü. verschiedenster SRs
+# TODO Waffenmerkmale: Scharf, Durchdringung, vielseitig
+  # Vielseitige Nutzung entweder als Checkbox mitberücksichtigen und Werte
+  # updaten, oder bei Checkbox beide Outputs (ein- und zweihändige Führung)
 # TODO Waffenbeschreibung um Liste "Merkmale: Scharf 1, Kritisch 2, ..." ergänzen
 # TODO Standardabweichungen
 # TODO Waffengeschwindigkeit
