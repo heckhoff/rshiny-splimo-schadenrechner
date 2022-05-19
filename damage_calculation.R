@@ -3,21 +3,23 @@ library(data.table)
 
 options(scipen = 999)
 
+# Online Resources ----
 # https://anydice.com/
+# https://shiny.rstudio.com/gallery/widget-gallery.html
+# https://shiny.rstudio.com/gallery/button-styler.html
+# https://shiny.rstudio.com/gallery/shiny-theme-selector.html
 # https://www.dungeonsolvers.com/2018/03/29/average-dice-roll/
 # https://stats.stackexchange.com/questions/177163/what-is-the-distribution-for-various-polyhedral-dice-all-rolled-at-once
 # https://stackoverflow.com/questions/44339070/calculating-population-standard-deviation-in-r
+# https://math.stackexchange.com/questions/1696623/what-is-the-expected-value-of-the-largest-of-the-three-dice-rolls
+# https://shiny.rstudio.com/gallery/
 
 # To-Dos ----
 # Offen:
-# PRIORITY ----
-# Bugfix: sharp != Sharp
-# Bugfix: Sharp raises min. damage for everything below the attribute value
-# -------------
 # TODO Schadensreduktion (Slider)
 # TODO Plot Durchschnittsschaden ggü. verschiedenster SRs
 # TODO Bugfix "subscript out of bounds" - Berechnung unterbinden
-# TODO Waffenmerkmale: Exakt, Durchdringung, vielseitig
+# TODO Waffenmerkmale: Durchdringung, vielseitig
   # Vielseitige Nutzung entweder als Checkbox mitberücksichtigen und Werte
   # updaten, oder bei Checkbox beide Outputs (ein- und zweihändige Führung)
 # TODO Waffenbeschreibung um Liste "Merkmale: Scharf 1, Kritisch 2, ..." ergänzen
@@ -29,6 +31,7 @@ options(scipen = 999)
   # und mit Wahrscheinlichkeiten der Schadensrechnung kombinieren 
   # (auch Fehlschläge in Durchschnittsschaden einfließen lassen etc.)
 # TODO Gegnersimulation
+# TODO Reactive Ranges für die Bar Plots (Range Slider)
 # TODO Waffenauswahl (Presets?)
   # Abseits GitHub: Auswertungstabelle Mondstahlklingen mit allen Berechnungen
 # TODO Trefferwahrscheinlichkeit

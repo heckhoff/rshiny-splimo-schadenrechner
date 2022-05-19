@@ -1,4 +1,5 @@
 library(shiny)
+library(shinythemes)
 library(shinyjs)
 library(shinyBS)
 library(ggplot2)
@@ -9,12 +10,13 @@ source("damage_calculation.R")
 # Frontend ----
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+  theme = "flatly",
   useShinyjs(),
   tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
-  
+
   # Application title
   titlePanel("Splittermond Waffenschadenrechner"),
-  
+  # navbarMenu(
   # Sidebar with a slider input for number of bins
   sidebarLayout(
     sidebarPanel(
@@ -45,17 +47,19 @@ ui <- fluidPage(
         value = 0
       ),
       
-      br(),
+      # br(),
       textOutput("weapon"),
-      br(),
+      # br(),
       textOutput("mean_dmg"),
-      br(),
+      # br(),
       textOutput("mean_dmg_per_tick"),
-      br(),
+      # br(),
       textOutput("sd_dmg"),
       br(),
       
       h4("Waffenmerkmale:"),
+      fluidRow(
+      column(6,
       sliderInput(
         "exact",
         "Exakt",
@@ -66,42 +70,48 @@ ui <- fluidPage(
       bsTooltip(id = "exact", title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnissezählen für den Schadenswurf.", 
                 trigger = "hover"),
       sliderInput(
-        "sharp",
-        "Scharf",
-        min = 0,
-        max = 5,
-        value = 0
-      ),
-      bsTooltip(id = "sharp", title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
-                trigger = "hover"),
-      sliderInput(
         "critical",
         "Kritisch",
         min = 0,
         max = 5,
         value = 0
+      )
       ),
+      column(6,
+        sliderInput(
+          "sharp",
+          "Scharf",
+          min = 0,
+          max = 5,
+          value = 0
+        ),
+        bsTooltip(id = "sharp", title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
+                  trigger = "hover"),
       bsTooltip(id = "critical", title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.", 
-                trigger = "hover"),
-      br(),
-      
-      selectInput(
-        "y_axis",
-        "Darstellung der kumulierten Grafik",
-        choices = list(
-          "minimaler Schaden" = "cum_prob_min",
-          "maximaler Schaden" = "cum_prob_max"
-        )
+                trigger = "hover")
+      )
       ),
       br(),
       actionButton("reset_input", "Eingabe zurücksetzen"),
     ),
     
     # Show a plot of the generated distribution
-    mainPanel(plotOutput("dist_plot"),
-              br(),
-              plotOutput("cum_dist_plot"))
-  )
+      mainPanel(
+
+          tabsetPanel(
+        tabPanel("Exakte Wahrscheinlichkeiten",
+      plotOutput("dist_plot"),
+      br(),
+      selectInput(
+        "y_axis",
+        "Darstellung der kumulierten Grafik",
+        choices = list(
+          "minimaler Schaden" = "cum_prob_min",
+          "maximaler Schaden" = "cum_prob_max")),
+      plotOutput("cum_dist_plot")),
+      tabPanel("Schadensreduktion"))
+      )
+)
 )
 # Backend ----
 # Define server logic required to draw a histogram
@@ -175,7 +185,7 @@ server <- function(input, output) {
           paste0(x * 100, "%"),
         breaks = pretty_breaks(n = 10)
       ) +
-      theme_classic(base_size = 20)
+      theme_classic(base_size = 16)
   })
   
   # Plot Cumulative Probability Distribution
@@ -203,7 +213,7 @@ server <- function(input, output) {
           paste0(x * 100, "%"),
         breaks = pretty_breaks(n = 10)
       ) +
-      theme_classic(base_size = 20)
+      theme_classic(base_size = 16)
   })
   
   observe({
