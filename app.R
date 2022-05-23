@@ -1,5 +1,6 @@
 library(shiny)
 library(shinythemes)
+library(shinydashboard)
 library(shinyjs)
 library(shinyBS)
 library(ggplot2)
@@ -50,7 +51,7 @@ ui <- fluidPage(
         "speed",
         "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
         min = 1,
-        value = 0
+        value = 1
       ),
       
       ## Textoutput ----
@@ -124,6 +125,7 @@ ui <- fluidPage(
       ),
       br(),
       # Schadensreduktion ----
+      conditionalPanel(condition = "input.tab_selected == 1",
       h4("Simulierte Schadensreduktion:"),
       sliderInput(
         "dmg_reduction",
@@ -135,18 +137,45 @@ ui <- fluidPage(
       bsTooltip(
         id = "dmg_reduction",
         title = "Die Schadensreduktion einer Rüstung wird von dem Schaden jedes erfolgreichen Angriffs gegen den Träger abgezogen.",
-        trigger = "hover"),
+        trigger = "hover")
+      ),
+      
+      conditionalPanel(condition = "input.tab_selected == 2",
+                       h4("Grenzen der Schadensreduktion:"),
+                       column(
+                         6,
+                         numericInput(
+                           "lower_bound",
+                           "Untere Grenze",
+                           min = 0,
+                           max = 9,
+                           value = 0
+                         )
+                       ),
+                       column(
+                         6,
+                         numericInput(
+                           "upper_bound",
+                           "Obere Grenze",
+                           min = 1,
+                           max = 25,
+                           value = 10
+                         )
+                       )
+                       ),
       
       br(),
       actionButton("reset_input", "Eingabe zurücksetzen"),
     ),
+    
     
     ## Main-Panel ----
     # Show a plot of the generated distribution
     mainPanel(tabsetPanel(
       tabPanel(
         "Exakte Wahrscheinlichkeiten",
-        plotOutput("dist_plot", width = "85%", height = "300px"),
+        value = 1,
+        plotOutput("dist_plot", width = "85%", height = "350px"),
         br(),
         selectInput(
           "y_axis",
@@ -156,19 +185,44 @@ ui <- fluidPage(
             "maximaler Schaden" = "cum_prob_max"
           )
         ),
-        plotOutput("cum_dist_plot", width = "85%", height = "300px")
+        plotOutput("cum_dist_plot", width = "85%", height = "350px")
       ),
-      tabPanel("Schadensreduktion")
+      tabPanel(
+        "Schadensreduktion",
+        value = 2,
+        plotOutput("dmgred_plot", width = "85%", height = "350px"),
+        selectInput(
+          "y_axis_dr",
+          "Art des durchschnittlichen Schadens",
+          choices = list(
+            "Durchschnittlicher Schaden" = "total",
+            "Durchschnittlicher Schaden pro Tick" = "norm"
+          )
+        )
+        ), id = "tab_selected"
     ))
   )
 )
 # Backend ----
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output, session) {
+  # Tab 1 ----
   # observe({
   #   if (all(c(input$d6, input$d10) == 0)) {
+  prob_vec <-
+    reactive({
+      req(any(c(input$d6, input$d10) != 0))
+      convolve_vecs(
+      n_d6 = input$d6,
+      n_d10 = input$d10,
+      att_exact = input$exact,
+      att_sharp = input$sharp,
+      att_critical = input$critical
+    )
+    })
+  
   prob_table <- reactive({
-    req(any(c(input$d6, input$d10) != 0))
+    req(any(c(input$d6, input$d10) != 0)) #
     create_prob_table(
       n_d6 = input$d6,
       n_d10 = input$d10,
@@ -182,7 +236,7 @@ server <- function(input, output) {
   })
   #   }
   # })
-  # Textoutput ----
+  ## Textoutput ----
   # Print Selected Weapon
   print_weapon_txt <-
     reactive(paste(
@@ -234,7 +288,7 @@ server <- function(input, output) {
   # theme_new <- theme_set(theme_bw())
   # theme_new <- theme_update(panel.grid.major.x = element_blank())
   
-  # Plots ----
+  ## Plots ----
   # Plot Probability Distribution
   output$dist_plot <- renderPlot({
     x <- prob_table()
@@ -243,6 +297,7 @@ server <- function(input, output) {
       geom_bar(stat = "identity",
                color = "blueviolet",
                fill = "dodgerblue1") +
+      geom_text(aes(label = paste0(round(probability * 100, 1), "%")), vjust = -0.3) + # FIXME In DT
       ggtitle("Wahrscheinlichkeitsverteilung des Schadens") +
       xlab("Schaden") +
       ylab("Wahrscheinlichkeit in %") +
@@ -267,6 +322,11 @@ server <- function(input, output) {
         geom_bar(stat = "identity",
                  color = "blueviolet",
                  fill = "dodgerblue1") +
+        geom_text(aes(label = switch(
+          input$y_axis,
+          cum_prob_min = paste0(round(cum_prob_min * 100, 1), "%"), # FIXME In DT
+          cum_prob_max = paste0(round(cum_prob_max * 100, 1), "%") # FIXME In DT
+        )), vjust = -0.3) +
         ggtitle(switch(
           input$y_axis,
           cum_prob_min = "Kumulierte Wahrscheinlichkeiten (Mindestschaden)",
@@ -297,6 +357,58 @@ server <- function(input, output) {
       show("y_axis")
     }
   })
+  
+  # Tab 2 ----
+  
+  observe(updateSliderInput(session, "lower_bound", max = input$upper_bound - 1))
+  
+  dmgred_table <- reactive({
+    req(any(c(input$d6, input$d10) != 0))
+    create_dmgred_table(
+      prob_vec = prob_vec(),
+      flat_mod = input$flat,
+      att_penetration = input$penetration,
+      lower_bound = input$lower_bound,
+      upper_bound = input$upper_bound
+    )
+  })
+  
+  ## Plots ----
+  output$dmgred_plot <- renderPlot({
+    x <- dmgred_table()
+    # x_axis_labels <- min(x[, damage_reduction]):max(x[, damage_reduction])
+    ggplot(data = x, aes(x = damage_reduction, y = switch(
+      input$y_axis_dr,
+      total = means,
+      norm = means / input$speed
+    ))) +
+      geom_bar(stat = "identity",
+               color = "blueviolet",
+               fill = "orange") +
+      geom_text(aes(label = switch(
+        input$y_axis_dr,
+        total = round(means, 2), # FIXME In DT
+        norm = round(means / input$speed, 2)), vjust = -0.3)) + # FIXME In DT
+      ggtitle("Durchschn. Schaden nach Schadensreduktion des Gegners") +
+      xlab("Schadensreduktion") +
+      ylab(switch(
+        input$y_axis_dr,
+        total = "Durchschn. Schaden",
+        norm = "D. Schaden / Tick"
+      )) +
+      scale_x_continuous(breaks = x$damage_reduction) +
+      # 
+      scale_y_continuous(
+        breaks = pretty_breaks(n = 10)
+        # sec.axis = sec_axis( trans = ~. / input$speed, name = "D. Schaden / Tick")
+      #   labels = function(x)
+      #     paste0(x * 100, "%"),
+      #   breaks = pretty_breaks(n = 10)
+      ) +
+      theme_classic(base_size = 20)
+  })
+  
+  
   
   observeEvent(input$reset_input, {
     shinyjs::reset("side-panel")
