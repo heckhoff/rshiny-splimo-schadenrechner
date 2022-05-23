@@ -25,6 +25,7 @@ options(scipen = 999)
 # TODO Tabellenoutput, RMarkdown Report mit allen Plots und Werten :)
 # TODO Code effizienter gestalten, indem redundante Berechnungen (z.B. Round)
   # direkt als cols im Table liegen
+# TODO Code sinnvoll auf einzelne Files aufteilen, z.B. Plotberechnungen andernorts
 # TODO Ersetzen seq.int mit seq_along(x:y)
 # TODO Erfolgsgrad-Bestimmungen - Wuchtangriff (Merkmal wuchtig)
   # Einfache Variante: Eingabe erwarteter Erfolgsgrade
@@ -189,13 +190,13 @@ create_dmgred_table <- function(prob_vec,
   
   # browser()
   damage_reduction <- seq.int(lower_bound, upper_bound)
-  damage_reduction <- pmax(0, damage_reduction - att_penetration)
+  dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
   
-  means <- sapply(damage_reduction, function(x) {pmax(0, seq.int(0, length(prob_vec) - 1) + flat_mod - x)})
+  means <- sapply(dmgred_pen_diff, function(x) {pmax(0, seq.int(0, length(prob_vec) - 1) + flat_mod - x)})
   means <- as.vector(prob_vec %*% means)
   # damage = pmax(0, seq.int(0, length(prob_vec) - 1) + flat_mod - damage_reduction)
   
-  dmgred_table <- data.table(damage_reduction = seq.int(lower_bound, upper_bound), means = means)
+  dmgred_table <- data.table(damage_reduction = damage_reduction, means = means)
   
   # 
   # round(sum(damage * prob_vec), 2)

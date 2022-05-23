@@ -1,6 +1,7 @@
 library(shiny)
 library(shinythemes)
 library(shinydashboard)
+# library(shinyWidgets)
 library(shinyjs)
 library(shinyBS)
 library(ggplot2)
@@ -23,29 +24,33 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       id = "side-panel",
+      bsCollapse(id = "weapons", open = "weapon_1",
+                 bsCollapsePanel("weapon_1",
       fluidRow(column(
-        6,
+        4,
         numericInput(
           "d6",
-          "Anzahl W6 Würfel",
+          "Anzahl W6",
           min = 0,
           max = 8,
           value = 0
         )
       ),
       column(
-        6,
+        4,
         numericInput(
           "d10",
-          "Anzahl W10 Würfel",
+          "Anzahl W10",
           min = 0,
           max = 5,
           value = 0
         )
-      )),
-      numericInput("flat",
-                   "Modifikator",
-                   value = 0),
+      ),
+      column(4,
+             numericInput("flat",
+                          "Modifikator",
+                          value = 0)
+             )),
       
       numericInput(
         "speed",
@@ -124,6 +129,11 @@ ui <- fluidPage(
         )
       ),
       br(),
+      
+      actionButton("button", "➕ Weitere Waffe hinzufügen")),
+      bsCollapsePanel("weapon_2",
+                      actionButton("button_2", "Weitere Waffe hinzufügen"))),
+      
       # Schadensreduktion ----
       conditionalPanel(condition = "input.tab_selected == 1",
       h4("Simulierte Schadensreduktion:"),
@@ -173,24 +183,24 @@ ui <- fluidPage(
     # Show a plot of the generated distribution
     mainPanel(tabsetPanel(
       tabPanel(
-        "Exakte Wahrscheinlichkeiten",
+        "Wahrscheinlichkeiten",
         value = 1,
-        plotOutput("dist_plot", width = "85%", height = "350px"),
+        plotOutput("dist_plot", width = "85%", height = "320px"),
         br(),
         selectInput(
           "y_axis",
           "Darstellung der kumulierten Grafik",
           choices = list(
-            "minimaler Schaden" = "cum_prob_min",
-            "maximaler Schaden" = "cum_prob_max"
+            "mindestens x oder höher" = "cum_prob_min",
+            "maximal x oder niedriger" = "cum_prob_max"
           )
         ),
-        plotOutput("cum_dist_plot", width = "85%", height = "350px")
+        plotOutput("cum_dist_plot", width = "85%", height = "320px")
       ),
       tabPanel(
         "Schadensreduktion",
         value = 2,
-        plotOutput("dmgred_plot", width = "85%", height = "350px"),
+        plotOutput("dmgred_plot", width = "85%", height = "450px"),
         selectInput(
           "y_axis_dr",
           "Art des durchschnittlichen Schadens",
@@ -203,10 +213,19 @@ ui <- fluidPage(
     ))
   )
 )
+
+
 # Backend ----
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
   # Tab 1 ----
+  
+  observeEvent(input$button, ({
+    updateCollapse(session, "weapons", open = "weapon_2")
+  }))
+  observeEvent(input$button_2, ({
+    updateCollapse(session, "weapons", open = "weapon_1")
+  }))
   # observe({
   #   if (all(c(input$d6, input$d10) == 0)) {
   prob_vec <-
@@ -295,7 +314,7 @@ server <- function(input, output, session) {
     x_axis_labels <- min(x[, damage]):max(x[, damage])
     ggplot(data = x, aes(x = damage, y = probability)) +
       geom_bar(stat = "identity",
-               color = "blueviolet",
+               color = "black",
                fill = "dodgerblue1") +
       geom_text(aes(label = paste0(round(probability * 100, 1), "%")), vjust = -0.3) + # FIXME In DT
       ggtitle("Wahrscheinlichkeitsverteilung des Schadens") +
@@ -320,7 +339,7 @@ server <- function(input, output, session) {
         cum_prob_max = cum_prob_max
       ))) +
         geom_bar(stat = "identity",
-                 color = "blueviolet",
+                 color = "black",
                  fill = "dodgerblue1") +
         geom_text(aes(label = switch(
           input$y_axis,
@@ -383,7 +402,7 @@ server <- function(input, output, session) {
       norm = means / input$speed
     ))) +
       geom_bar(stat = "identity",
-               color = "blueviolet",
+               color = "black",
                fill = "orange") +
       geom_text(aes(label = switch(
         input$y_axis_dr,
@@ -394,7 +413,7 @@ server <- function(input, output, session) {
       ylab(switch(
         input$y_axis_dr,
         total = "Durchschn. Schaden",
-        norm = "D. Schaden / Tick"
+        norm = "Durchschn. Schaden / Tick"
       )) +
       scale_x_continuous(breaks = x$damage_reduction) +
       # 
