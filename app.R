@@ -181,8 +181,8 @@ ui <- fluidPage(
           "y_axis",
           "Darstellung der kumulierten Grafik",
           choices = list(
-            "minimaler Schaden" = "cum_prob_min",
-            "maximaler Schaden" = "cum_prob_max"
+            "mindestens x oder höher" = "cum_prob_min",
+            "maximal x oder niedriger" = "cum_prob_max"
           )
         ),
         plotOutput("cum_dist_plot", width = "85%", height = "350px")
@@ -333,7 +333,8 @@ server <- function(input, output, session) {
           cum_prob_max = "Kumulierte Wahrscheinlichkeiten (Maximalschaden)"
         )) +
         xlab("Schaden") +
-        ylab("Wahrscheinlichkeit in %") +
+        ylab("Wahrscheinlichkeit in %"
+             ) +
         scale_x_continuous(labels = x_axis_labels, breaks = x_axis_labels) +
         scale_y_continuous(
           labels = function(x)

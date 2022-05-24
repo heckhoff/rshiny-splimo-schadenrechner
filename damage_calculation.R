@@ -16,6 +16,8 @@ options(scipen = 999)
 
 # To-Dos ----
 # Offen:
+# FIXME Aggregated 0 labels stacking
+# FIXME Standardabweichung bei SR
 # TODO Waffenmerkmale: vielseitig
   # Vielseitige Nutzung entweder als Checkbox mitberücksichtigen und Werte
   # updaten, oder bei Checkbox beide Outputs (ein- und zweihändige Führung)
@@ -25,6 +27,8 @@ options(scipen = 999)
 # TODO Tabellenoutput, RMarkdown Report mit allen Plots und Werten :)
 # TODO Code effizienter gestalten, indem redundante Berechnungen (z.B. Round)
   # direkt als cols im Table liegen
+# TODO Think about matrix functions, writing out sample space
+#   https://www.statisticshowto.com/probability-and-statistics/probability-main-index/dice-roll-probability-6-sided-dice/
 # TODO Ersetzen seq.int mit seq_along(x:y)
 # TODO Erfolgsgrad-Bestimmungen - Wuchtangriff (Merkmal wuchtig)
   # Einfache Variante: Eingabe erwarteter Erfolgsgrade
