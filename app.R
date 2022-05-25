@@ -26,128 +26,231 @@ ui <- fluidPage(
       id = "side-panel",
       bsCollapse(id = "weapons", open = "weapon_1",
                  bsCollapsePanel("weapon_1",
-      fluidRow(column(
-        4,
-        numericInput(
-          "d6",
-          "Anzahl W6",
-          min = 0,
-          max = 8,
-          value = 0
-        )
-      ),
-      column(
-        4,
-        numericInput(
-          "d10",
-          "Anzahl W10",
-          min = 0,
-          max = 5,
-          value = 0
-        )
-      ),
-      column(4,
-             numericInput("flat",
-                          "Modifikator",
-                          value = 0)
-             )),
-      
-      numericInput(
-        "speed",
-        "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
-        min = 1,
-        value = 1
-      ),
-      
-      ## Textoutput ----
-      br(),
-      textOutput("weapon"),
-      # br(),
-      textOutput("mean_dmg"),
-      # br(),
-      textOutput("mean_dmg_per_tick"),
-      # br(),
-      textOutput("sd_dmg"),
-      br(),
-      
-      ## Waffenmerkmale ----
-      h4("Waffenmerkmale:"),
-      fluidRow(
-        column(
-          6,
-          sliderInput(
-            "exact",
-            "Exakt",
-            min = 0,
-            max = 5,
-            value = 0
-          ),
-          bsTooltip(
-            id = "exact",
-            title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnisse zählen für den Schadenswurf.",
-            trigger = "hover"
-          ),
-          sliderInput(
-            "critical",
-            "Kritisch",
-            min = 0,
-            max = 5,
-            value = 0
-          ),
-          bsTooltip(
-            id = "critical",
-            title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
-            trigger = "hover"
-          )
-        ),
-        column(
-          6,
-          sliderInput(
-            "penetration",
-            "Durchdringung",
-            min = 0,
-            max = 6,
-            value = 0
-          ),
-          bsTooltip(
-            id = "penetration",
-            title = "Für jede Stufe dieses Merkmals kann 1 Punkt der gegnerischen Schadensreduktion ignoriert werden, egal aus welcher Quelle diese stammt.",
-            trigger = "hover"
-          ),
-          sliderInput(
-            "sharp",
-            "Scharf",
-            min = 0,
-            max = 5,
-            value = 0
-          ),
-          bsTooltip(
-            id = "sharp",
-            title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
-            trigger = "hover"
-          )
-        )
-      ),
-      br(),
-      
-      actionButton("button", "➕ Weitere Waffe hinzufügen")),
-      bsCollapsePanel("weapon_2",
-                      actionButton("button_2", "Weitere Waffe hinzufügen"))),
+                                 fluidRow(column(
+                                   4,
+                                   numericInput(
+                                     "d6",
+                                     "Anzahl W6",
+                                     min = 0,
+                                     max = 8,
+                                     value = 0
+                                   )
+                                 ),
+                                 column(
+                                   4,
+                                   numericInput(
+                                     "d10",
+                                     "Anzahl W10",
+                                     min = 0,
+                                     max = 5,
+                                     value = 0
+                                   )
+                                 ),
+                                 column(4,
+                                        numericInput("flat",
+                                                     "Modifikator",
+                                                     value = 0)
+                                 )),
+                                 
+                                 numericInput(
+                                   "speed",
+                                   "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
+                                   min = 1,
+                                   value = 1
+                                 ),
+                                 
+                                 ## Textoutput ----
+                                 br(),
+                                 textOutput("weapon"),
+                                 # br(),
+                                 textOutput("mean_dmg"),
+                                 # br(),
+                                 textOutput("mean_dmg_per_tick"),
+                                 # br(),
+                                 textOutput("sd_dmg"),
+                                 br(),
+                                 
+                                 ## Waffenmerkmale ----
+                                 h4("Waffenmerkmale:"),
+                                 fluidRow(
+                                   column(
+                                     6,
+                                     sliderInput(
+                                       "exact",
+                                       "Exakt",
+                                       min = 0,
+                                       max = 5,
+                                       value = 0
+                                     ),
+                                     bsTooltip(
+                                       id = "exact",
+                                       title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnisse zählen für den Schadenswurf.",
+                                       trigger = "hover"
+                                     ),
+                                     sliderInput(
+                                       "critical",
+                                       "Kritisch",
+                                       min = 0,
+                                       max = 5,
+                                       value = 0
+                                     ),
+                                     bsTooltip(
+                                       id = "critical",
+                                       title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
+                                       trigger = "hover"
+                                     )
+                                   ),
+                                   column(
+                                     6,
+                                     sliderInput(
+                                       "penetration",
+                                       "Durchdringung",
+                                       min = 0,
+                                       max = 6,
+                                       value = 0
+                                     ),
+                                     bsTooltip(
+                                       id = "penetration",
+                                       title = "Für jede Stufe dieses Merkmals kann 1 Punkt der gegnerischen Schadensreduktion ignoriert werden, egal aus welcher Quelle diese stammt.",
+                                       trigger = "hover"
+                                     ),
+                                     sliderInput(
+                                       "sharp",
+                                       "Scharf",
+                                       min = 0,
+                                       max = 5,
+                                       value = 0
+                                     ),
+                                     bsTooltip(
+                                       id = "sharp",
+                                       title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
+                                       trigger = "hover"
+                                     )
+                                   )
+                                 ),
+                                 br(),
+                                 
+                                 actionButton("button", "➕ Weitere Waffe hinzufügen")),
+                 bsCollapsePanel("weapon_2",
+                                 fluidRow(column(
+                                   4,
+                                   numericInput(
+                                     "d6_2",
+                                     "Anzahl W6",
+                                     min = 0,
+                                     max = 8,
+                                     value = 0
+                                   )
+                                 ),
+                                 column(
+                                   4,
+                                   numericInput(
+                                     "d10_2",
+                                     "Anzahl W10",
+                                     min = 0,
+                                     max = 5,
+                                     value = 0
+                                   )
+                                 ),
+                                 column(4,
+                                        numericInput("flat_2",
+                                                     "Modifikator",
+                                                     value = 0)
+                                 )),
+                                 
+                                 numericInput(
+                                   "speed_2",
+                                   "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
+                                   min = 1,
+                                   value = 1
+                                 ),
+                                 
+                                 ## Textoutput ----
+                                 br(),
+                                 textOutput("weapon_2"),
+                                 # br(),
+                                 textOutput("mean_dmg_2"),
+                                 # br(),
+                                 textOutput("mean_dmg_per_tick_2"),
+                                 # br(),
+                                 textOutput("sd_dmg_2"),
+                                 br(),
+                                 
+                                 ## Waffenmerkmale ----
+                                 h4("Waffenmerkmale:"),
+                                 fluidRow(
+                                   column(
+                                     6,
+                                     sliderInput(
+                                       "exact_2",
+                                       "Exakt",
+                                       min = 0,
+                                       max = 5,
+                                       value = 0
+                                     ),
+                                     bsTooltip(
+                                       id = "exact_2",
+                                       title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnisse zählen für den Schadenswurf.",
+                                       trigger = "hover"
+                                     ),
+                                     sliderInput(
+                                       "critical_2",
+                                       "Kritisch",
+                                       min = 0,
+                                       max = 5,
+                                       value = 0
+                                     ),
+                                     bsTooltip(
+                                       id = "critical_2",
+                                       title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
+                                       trigger = "hover"
+                                     )
+                                   ),
+                                   column(
+                                     6,
+                                     sliderInput(
+                                       "penetration_2",
+                                       "Durchdringung",
+                                       min = 0,
+                                       max = 6,
+                                       value = 0
+                                     ),
+                                     bsTooltip(
+                                       id = "penetration_2",
+                                       title = "Für jede Stufe dieses Merkmals kann 1 Punkt der gegnerischen Schadensreduktion ignoriert werden, egal aus welcher Quelle diese stammt.",
+                                       trigger = "hover"
+                                     ),
+                                     sliderInput(
+                                       "sharp_2",
+                                       "Scharf",
+                                       min = 0,
+                                       max = 5,
+                                       value = 0
+                                     ),
+                                     bsTooltip(
+                                       id = "sharp_2",
+                                       title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
+                                       trigger = "hover"
+                                     )
+                                   )
+                                 ),
+                                 br(),
+                                 actionButton("button_2", "Zurück zu Waffe 1"))),
       
       # Schadensreduktion ----
       conditionalPanel(condition = "input.tab_selected == 1",
-      h4("Simulierte Schadensreduktion:"),
-      sliderInput(
-        "dmg_reduction",
-        "SR",
-        min = 0,
-        max = 10,
-        value = 0
-      ),
-      bsTooltip(
-        id = "dmg_reduction",
-        title = "Die Schadensreduktion einer Rüstung wird von dem Schaden jedes erfolgreichen Angriffs gegen den Träger abgezogen.",
-        trigger = "hover")
+                       h4("Simulierte Schadensreduktion:"),
+                       sliderInput(
+                         "dmg_reduction",
+                         "SR",
+                         min = 0,
+                         max = 10,
+                         value = 0
+                       ),
+                       bsTooltip(
+                         id = "dmg_reduction",
+                         title = "Die Schadensreduktion einer Rüstung wird von dem Schaden jedes erfolgreichen Angriffs gegen den Träger abgezogen.",
+                         trigger = "hover")
       ),
       
       conditionalPanel(condition = "input.tab_selected == 2",
@@ -172,7 +275,7 @@ ui <- fluidPage(
                            value = 10
                          )
                        )
-                       ),
+      ),
       
       br(),
       actionButton("reset_input", "Eingabe zurücksetzen"),
@@ -209,7 +312,7 @@ ui <- fluidPage(
             "Durchschnittlicher Schaden pro Tick" = "norm"
           )
         )
-        ), id = "tab_selected"
+      ), id = "tab_selected"
     ))
   )
 )
@@ -241,18 +344,39 @@ server <- function(input, output, session) {
     })
   
   prob_table <- reactive({
-    req(any(c(input$d6, input$d10) != 0)) #
-    create_prob_table(
-      n_d6 = input$d6,
-      n_d10 = input$d10,
-      flat_mod = input$flat,
-      att_exact = input$exact,
-      att_sharp = input$sharp,
-      att_critical = input$critical,
-      att_penetration = input$penetration,
-      damage_reduction = input$dmg_reduction
-    )
+    if(isTruthy(any(c(input$d6, input$d10) != 0))) {
+      create_prob_table(
+        prob_vec(),
+        att_penetration = input$penetration,
+        damage_reduction = input$dmg_reduction
+      )
+    } else {
+      req(any(c(input$d6, input$d10) != 0))
+    }
   })
+  
+  prob_table_2 <- reactive({
+    if(isTruthy(any(c(input$d6_2, input$d10_2) != 0))) {
+      create_prob_table(
+        prob_vec_2(),
+        att_penetration = input$penetration_2,
+        damage_reduction = input$dmg_reduction_2
+      )
+    } else {
+      req(any(c(input$d6_2, input$d10_2) != 0))
+    }
+  })
+
+  table <- reactive({
+    if(isTruthy(prob_table() & !prob_table_2())) {
+      prob_table()
+    } else if (isTruthy(prob_table_2() & !prob_table())) {
+      prob_table_2()
+    } else {
+      rbindlist(list("Waffe 1" = prob_table(), "Waffe 2" = prob_table_2()), idcol = TRUE)
+    }
+  })
+  
   #   }
   # })
   ## Textoutput ----
@@ -310,8 +434,8 @@ server <- function(input, output, session) {
   ## Plots ----
   # Plot Probability Distribution
   output$dist_plot <- renderPlot({
-    x <- prob_table()
-    x_axis_labels <- min(x[, damage]):max(x[, damage])
+    x <- table()
+    # x_axis_labels <- min(x[, damage]):max(x[, damage])
     ggplot(data = x, aes(x = damage, y = probability)) +
       geom_bar(stat = "identity",
                color = "black",
@@ -320,7 +444,7 @@ server <- function(input, output, session) {
       ggtitle("Wahrscheinlichkeitsverteilung des Schadens") +
       xlab("Schaden") +
       ylab("Wahrscheinlichkeit in %") +
-      scale_x_continuous(labels = x_axis_labels, breaks = x_axis_labels) +
+      # scale_x_continuous(labels = x_axis_labels, breaks = x_axis_labels) +
       scale_y_continuous(
         labels = function(x)
           paste0(x * 100, "%"),
@@ -332,7 +456,7 @@ server <- function(input, output, session) {
   # Plot Cumulative Probability Distribution
     output$cum_dist_plot <- renderPlot({
       x <- prob_table()
-      x_axis_labels <- min(x[, damage]):max(x[, damage])
+      # x_axis_labels <- min(x[, damage]):max(x[, damage])
       ggplot(data = x, aes(x = damage, y = switch(
         input$y_axis,
         cum_prob_min = cum_prob_min,
@@ -353,7 +477,7 @@ server <- function(input, output, session) {
         )) +
         xlab("Schaden") +
         ylab("Wahrscheinlichkeit in %") +
-        scale_x_continuous(labels = x_axis_labels, breaks = x_axis_labels) +
+        # scale_x_continuous(labels = x_axis_labels, breaks = x_axis_labels) +
         scale_y_continuous(
           labels = function(x)
             paste0(x * 100, "%"),
