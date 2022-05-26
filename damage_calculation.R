@@ -37,6 +37,7 @@ options(scipen = 999)
 # und mit Wahrscheinlichkeiten der Schadensrechnung kombinieren 
 # (auch Fehlschläge in Durchschnittsschaden einfließen lassen etc.)
 # TODO Gegnersimulation
+# TODO bindEvent()
 # TODO Reactive Ranges für die Bar Plots (Range Slider)
 # TODO Waffenauswahl (Presets?)
 # Abseits GitHub: Auswertungstabelle Mondstahlklingen mit allen Berechnungen
@@ -142,10 +143,7 @@ create_weapon_txt <- function(n_d6 = 0,
 create_prob_table <- function(prob_vec,
                               flat_mod = 0,
                               att_penetration = 0,
-                              damage_reduction = 0,
-                              ...) {
-  # browser()
-  
+                              damage_reduction = 0) {
   
   damage_reduction <- pmax(0, damage_reduction - att_penetration)
   damage_reduction_2 <- pmax(0, damage_reduction - att_penetration)
@@ -154,6 +152,8 @@ create_prob_table <- function(prob_vec,
     data.table(damage = seq.int(0, length(prob_vec) - 1), probability = prob_vec)
   prob_table[, damage := damage + flat_mod - damage_reduction]
   prob_table[damage < 0, damage := 0]
+
+  prob_table <- prob_table[, lapply(.SD, sum), by = damage] #
   
   prob_table[, cum_prob_min := rev(cumsum(rev(probability)))]
   prob_table[damage == 0, cum_prob_min := first(cum_prob_min) / .N]
@@ -161,46 +161,14 @@ create_prob_table <- function(prob_vec,
   prob_table[, cum_prob_max := cumsum(probability)]
   prob_table[damage == 0, cum_prob_max := last(cum_prob_max) / .N]
   
-  min <- prob_table[prob_vec != 0, min(damage)]
-  max <- prob_table[prob_vec != 0, max(damage)]
+  # min <- prob_table[prob_vec != 0, min(damage)]
+  # max <- prob_table[prob_vec != 0, max(damage)]
+  min <- prob_table[probability != 0, min(damage)]
+  max <- prob_table[probability != 0, max(damage)]
   
   prob_table <- prob_table[damage %between% c(min, max)]
   return(prob_table)
 }
-
-# create_prob_table_old <- function(prob_vec,
-#                               flat_mod = 0,
-#                               att_penetration = 0,
-#                               damage_reduction = 0) {
-#   
-#   # probability <-
-#   #   convolve_vecs(
-#   #     n_d6 = n_d6,
-#   #     n_d10 = n_d10,
-#   #     att_exact = att_exact,
-#   #     att_sharp = att_sharp,
-#   #     att_critical = att_critical
-#   #   )
-#   # browser()
-#   damage_reduction <- pmax(0, damage_reduction - att_penetration)
-#   
-#   prob_table <-
-#     data.table(damage = seq.int(0, length(prob_vec) - 1), probability = prob_vec)
-#   prob_table[, damage := damage + flat_mod - damage_reduction]
-#   prob_table[damage < 0, damage := 0]
-#   
-#   prob_table[, cum_prob_min := rev(cumsum(rev(probability)))]
-#   prob_table[damage == 0, cum_prob_min := first(cum_prob_min) / .N]
-#   
-#   prob_table[, cum_prob_max := cumsum(probability)]
-#   prob_table[damage == 0, cum_prob_max := last(cum_prob_max) / .N]
-#   
-#   min <- prob_table[prob_vec != 0, min(damage)]
-#   max <- prob_table[prob_vec != 0, max(damage)]
-#   
-#   prob_table <- prob_table[damage %between% c(min, max)]
-#   return(prob_table)
-# }
 
 create_dmgred_table <- function(prob_vec,
                                 flat_mod = 0,
