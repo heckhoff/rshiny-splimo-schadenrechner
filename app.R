@@ -1,11 +1,12 @@
 library(shiny)
 library(shinythemes)
 library(shinydashboard)
-# library(shinyWidgets)
+library(shinyWidgets)
 library(shinyjs)
 library(shinyBS)
 library(ggplot2)
 library(scales)
+library(openxlsx)
 
 source("damage_calculation.R")
 
@@ -30,6 +31,13 @@ ui <- fluidPage(
         bsCollapsePanel(
           "weapon_1",
           fluidRow(
+            pickerInput(
+              "select_weapon_1",
+              "Waffe auswählen:",
+              choices = data[, name],
+              multiple = TRUE,
+              options = pickerOptions(maxOptions = 1)
+            ),
             column(4,
                    numericInput(
                      "d6",
@@ -79,7 +87,7 @@ ui <- fluidPage(
                 "exact",
                 "Exakt",
                 min = 0,
-                max = 5,
+                max = 3,
                 value = 0
               ),
               bsTooltip(
@@ -135,6 +143,13 @@ ui <- fluidPage(
         bsCollapsePanel(
           "weapon_2",
           fluidRow(
+            pickerInput(
+              "select_weapon_2",
+              "Waffe auswählen:",
+              choices = data[, name],
+              multiple = TRUE,
+              options = pickerOptions(maxOptions = 1)
+            ),
             column(4,
                    numericInput(
                      "d6_2",
@@ -184,7 +199,7 @@ ui <- fluidPage(
                 "exact_2",
                 "Exakt",
                 min = 0,
-                max = 5,
+                max = 3,
                 value = 0
               ),
               bsTooltip(
@@ -328,12 +343,24 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   # Tab 1 ----
   
+  ## Update elements ----
+  
   observeEvent(input$button, ({
     updateCollapse(session, "weapons", open = "weapon_2")
   }))
   observeEvent(input$button_2, ({
     updateCollapse(session, "weapons", open = "weapon_1")
   }))
+  
+  ## Create objects ----
+  
+  sel_weapon_1 <- reactive({
+    data[name == input$select_weapon_1]
+  })
+  
+  sel_weapon_2 <- reactive({
+    data[name == input$select_weapon_2]
+  })
   
   comb_1 <-
     reactive({
@@ -667,6 +694,91 @@ server <- function(input, output, session) {
       theme_classic(base_size = 20)
   })
   
+  # Update / Reset inputs ----
+  
+  ## Weapon 1 ----
+
+  observeEvent(
+    input$select_weapon_1,
+    updateNumericInput(session, "d6", value = sel_weapon_1()$n_d6)
+  )
+  
+  observeEvent(
+    input$select_weapon_1,
+    updateNumericInput(session, "d10", value = sel_weapon_1()$n_d10)
+  )
+  
+  observeEvent(
+    input$select_weapon_1,
+    updateNumericInput(session, "flat", value = sel_weapon_1()$flat_mod)
+  )
+  
+  observeEvent(
+    input$select_weapon_1,
+    updateNumericInput(session, "speed", value = sel_weapon_1()$speed)
+  )
+  
+  observeEvent(
+    input$select_weapon_1,
+    updateNumericInput(session, "exact", value = sel_weapon_1()$exakt)
+  )
+  
+  observeEvent(
+    input$select_weapon_1,
+    updateNumericInput(session, "critical", value = sel_weapon_1()$kritisch)
+  )
+  
+  observeEvent(
+    input$select_weapon_1,
+    updateNumericInput(session, "penetration", value = sel_weapon_1()$durchdringung)
+  )
+  
+  observeEvent(
+    input$select_weapon_1,
+    updateNumericInput(session, "sharp", value = sel_weapon_1()$scharf)
+  )
+  
+  ## Weapon 2 ----
+  
+  observeEvent(
+    input$select_weapon_2,
+    updateNumericInput(session, "d6_2", value = sel_weapon_2()$n_d6)
+  )
+  
+  observeEvent(
+    input$select_weapon_2,
+    updateNumericInput(session, "d10_2", value = sel_weapon_2()$n_d10)
+  )
+  
+  observeEvent(
+    input$select_weapon_2,
+    updateNumericInput(session, "flat_2", value = sel_weapon_2()$flat_mod)
+  )
+  
+  observeEvent(
+    input$select_weapon_2,
+    updateNumericInput(session, "speed_2", value = sel_weapon_2()$speed)
+  )
+  
+  observeEvent(
+    input$select_weapon_2,
+    updateNumericInput(session, "exact_2", value = sel_weapon_2()$exakt)
+  )
+  
+  observeEvent(
+    input$select_weapon_2,
+    updateNumericInput(session, "critical_2", value = sel_weapon_2()$kritisch)
+  )
+  
+  observeEvent(
+    input$select_weapon_2,
+    updateNumericInput(session, "penetration_2", value = sel_weapon_2()$durchdringung)
+  )
+  
+  observeEvent(
+    input$select_weapon_2,
+    updateNumericInput(session, "sharp_2", value = sel_weapon_2()$scharf)
+  )
   
   
   observeEvent(input$reset_input, {

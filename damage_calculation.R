@@ -1,4 +1,5 @@
 library(data.table)
+library(openxlsx)
 
 options(scipen = 999)
 
@@ -25,7 +26,7 @@ options(scipen = 999)
 # TODO Tabellenoutput, RMarkdown Report mit allen Plots und Werten :)
 # TODO Code effizienter gestalten, indem redundante Berechnungen (z.B. Round)
 # direkt als cols im Table liegen
-
+# TODO Fernkampfwaffen ebenfalls scrapen
 # TODO Think about matrix functions, writing out sample space
 #   https://www.statisticshowto.com/probability-and-statistics/probability-main-index/dice-roll-probability-6-sided-dice/
 # TODO Code sinnvoll auf einzelne Files aufteilen, z.B. Plotberechnungen andernorts
@@ -53,6 +54,10 @@ options(scipen = 999)
 # TODO Kumulative Wahrscheinlichkeiten (min. X Schaden, Funktionsparameter?)
 # TODO Reverse kumulativ (max. X Schaden)
 
+# Import data ----
+
+data <- read.xlsx("waffenliste_mondstahlklingen.xlsx")
+setDT(data)
 
 # Dice Calculations ----
 
