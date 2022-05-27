@@ -71,7 +71,7 @@ msk[grepl("Kritisch", attributes),
 
 msk[grepl("Lange Waffe", attributes), lange_waffe := 1, by = id]
 
-msk[grepl("Nahkampftauglich", nahkampftauglich := attributes), 1, by = id]
+msk[grepl("Nahkampftauglich", attributes), nahkampftauglich := 1, by = id]
 
 msk[grepl("Paarwaffe", attributes), paarwaffe := 1, by = id]
 
@@ -125,5 +125,8 @@ msk[n_attributes != val_check]
 msk[, val_check := NULL]
 
 setorderv(msk, cols = "name")
+
+col_vec <- c(20, 23, 26, 27, 28, 29, 31, 32, 33, 34, 35, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48)
+msk[, (col_vec)] <- msk[, lapply(.SD, as.logical), .SDcols = (col_vec)]
 
 write.xlsx(msk, "waffenliste_mondstahlklingen.xlsx")

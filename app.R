@@ -106,6 +106,16 @@ ui <- fluidPage(
                 id = "critical",
                 title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
                 trigger = "hover"
+              ),
+              checkboxInput(
+                "massive",
+                "Wuchtig",
+                value = FALSE
+              ),
+              bsTooltip(
+                id = "massive",
+                title = "Bei Waffen mit diesem Merkmal verursacht das freie Manöver Wuchtangriff 2 statt 1 zusätzlichen Punkt Schaden pro eingesetzten Erfolgsgrad.",
+                trigger = "hover"
               )
             ),
             column(
@@ -218,6 +228,16 @@ ui <- fluidPage(
                 id = "critical_2",
                 title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
                 trigger = "hover"
+              ),
+              checkboxInput(
+                "massive_2",
+                "Wuchtig",
+                value = FALSE
+              ),
+              bsTooltip(
+                id = "massive_2",
+                title = "Bei Waffen mit diesem Merkmal verursacht das freie Manöver Wuchtangriff 2 statt 1 zusätzlichen Punkt Schaden pro eingesetzten Erfolgsgrad.",
+                trigger = "hover"
               )
             ),
             column(
@@ -256,10 +276,10 @@ ui <- fluidPage(
       # Schadensreduktion ----
       conditionalPanel(
         condition = "input.tab_selected == 1",
-        h4("Simulierte Schadensreduktion:"),
+        h4("Weitere Parameter:"),
         sliderInput(
           "dmg_reduction",
-          "SR",
+          "Simulierte Schadensreduktion",
           min = 0,
           max = 10,
           value = 0
@@ -267,6 +287,18 @@ ui <- fluidPage(
         bsTooltip(
           id = "dmg_reduction",
           title = "Die Schadensreduktion einer Rüstung wird von dem Schaden jedes erfolgreichen Angriffs gegen den Träger abgezogen.",
+          trigger = "hover"
+        ),
+        sliderInput(
+          "success_lvl",
+          "Für Wuchtangriff genutzte Erfolgsgrade",
+          min = 0,
+          max = 10,
+          value = 0
+        ),
+        bsTooltip(
+          id = "success_lvl",
+          title = "Für jeden aufgewendeten Erfolgsgrad richtet der Angriff einen zusätzlichen Punkt Schaden an.",
           trigger = "hover"
         )
       ),
@@ -307,7 +339,7 @@ ui <- fluidPage(
       tabPanel(
         "Wahrscheinlichkeiten",
         value = 1,
-        plotOutput("dist_plot", width = "100%", height = "320px"),
+        plotOutput("dist_plot", height = "320px"),
         br(),
         selectInput(
           "y_axis",
@@ -317,7 +349,7 @@ ui <- fluidPage(
             "maximal x oder niedriger" = "cum_prob_max"
           )
         ),
-        plotOutput("cum_dist_plot", width = "85%", height = "320px")
+        plotOutput("cum_dist_plot", height = "320px")
       ),
       tabPanel(
         "Schadensreduktion",
@@ -392,7 +424,9 @@ server <- function(input, output, session) {
         comb_1(),
         flat_mod = input$flat,
         att_penetration = input$penetration,
-        damage_reduction = input$dmg_reduction
+        damage_reduction = input$dmg_reduction,
+        success_level = input$success_lvl,
+        att_massive = input$massive
       )[, weapon := "Waffe 1"]
     } else {
       req(any(c(input$d6, input$d10) != 0))
@@ -405,7 +439,9 @@ server <- function(input, output, session) {
         comb_2(),
         flat_mod = input$flat_2,
         att_penetration = input$penetration_2,
-        damage_reduction = input$dmg_reduction
+        damage_reduction = input$dmg_reduction,
+        success_level = input$success_lvl,
+        att_massive = input$massive
       )[, weapon := "Waffe 2"]
     } else {
       req(any(c(input$d6_2, input$d10_2) != 0))
@@ -527,11 +563,12 @@ server <- function(input, output, session) {
         color = "black",
         position = position_dodge2(preserve = "single")
       ) +
+      scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
       geom_text(aes(label = paste0(round(
         probability * 100, 1
       ), "%")),
       vjust = -0.3,
-      position = position_dodge(width = 1)) + # FIXME In DT
+      position = position_dodge(width = 0.9)) + # FIXME In DT
       ggtitle("Wahrscheinlichkeitsverteilung des Schadens") +
       xlab("Schaden") +
       ylab("Wahrscheinlichkeit in %") +
@@ -563,6 +600,7 @@ server <- function(input, output, session) {
         color = "black",
         position = position_dodge2(preserve = "single")
       ) +
+      scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
       geom_text(aes(label = switch(
         input$y_axis,
         cum_prob_min = paste0(round(cum_prob_min * 100, 1), "%"),
@@ -570,7 +608,7 @@ server <- function(input, output, session) {
         cum_prob_max = paste0(round(cum_prob_max * 100, 1), "%") # FIXME In DT
       )),
       vjust = -0.3,
-      position = position_dodge(width = 1)) +
+      position = position_dodge(width = 0.9)) +
       ggtitle(switch(
         input$y_axis,
         cum_prob_min = "Kumulierte Wahrscheinlichkeiten (Mindestschaden)",
@@ -623,6 +661,8 @@ server <- function(input, output, session) {
         flat_mod = input$flat,
         weapon_speed = input$speed,
         att_penetration = input$penetration,
+        success_level = input$success_lvl,
+        att_massive = input$massive,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
       )[, weapon := "Waffe 1"]
@@ -638,6 +678,8 @@ server <- function(input, output, session) {
         flat_mod = input$flat_2,
         weapon_speed = input$speed_2,
         att_penetration = input$penetration_2,
+        success_level = input$success_lvl,
+        att_massive = input$massive_2,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
       )[, weapon := "Waffe 2"]
@@ -671,6 +713,7 @@ server <- function(input, output, session) {
         color = "black",
         position = position_dodge2(preserve = "single")
       ) +
+      scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
       geom_text(aes(label = switch(
         input$y_axis_dr,
         total = round(means, 2),
@@ -738,6 +781,11 @@ server <- function(input, output, session) {
     updateNumericInput(session, "sharp", value = sel_weapon_1()$scharf)
   )
   
+  observeEvent(
+    input$select_weapon_1,
+    updateCheckboxInput(session, "massive", value = sel_weapon_1()$wuchtig)
+  )
+  
   ## Weapon 2 ----
   
   observeEvent(
@@ -780,6 +828,10 @@ server <- function(input, output, session) {
     updateNumericInput(session, "sharp_2", value = sel_weapon_2()$scharf)
   )
   
+  observeEvent(
+    input$select_weapon_2,
+    updateCheckboxInput(session, "massive_2", value = sel_weapon_2()$wuchtig)
+  )
   
   observeEvent(input$reset_input, {
     shinyjs::reset("side-panel")

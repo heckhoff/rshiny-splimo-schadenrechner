@@ -56,7 +56,7 @@ options(scipen = 999)
 
 # Import data ----
 
-data <- read.xlsx("waffenliste_mondstahlklingen.xlsx")
+data <- read.xlsx("waffenliste_mondstahlklingen.xlsx", sheet = 1)
 setDT(data)
 
 # Dice Calculations ----
@@ -118,13 +118,17 @@ create_weapon_txt <- function(n_d6 = 0,
 create_prob_table <- function(combinations,
                               flat_mod = 0,
                               damage_reduction = 0,
-                              att_penetration = 0) {
+                              att_penetration = 0,
+                              success_level = 0,
+                              att_massive = FALSE) {
   dmg_red <- pmax(0, damage_reduction - att_penetration)
+  
+  success <- ifelse(att_massive, success_level * 2, success_level)
   
   dt <-
     data.table(damage = combinations,
                probability = 1 / length(combinations))
-  dt[, damage := pmax(0, damage + flat_mod - dmg_red)]
+  dt[, damage := pmax(0, damage + flat_mod + success - dmg_red)]
   dt <- dt[, lapply(.SD, sum), by = damage]
   dt[, cum_prob_min := rev(cumsum(rev(probability)))]
   dt[, cum_prob_max := cumsum(probability)]
@@ -135,15 +139,19 @@ create_dmgred_table <- function(combinations,
                                 flat_mod = 0,
                                 weapon_speed = 1,
                                 att_penetration = 0,
+                                success_level = 0,
+                                att_massive = FALSE,
                                 lower_bound = 0,
                                 upper_bound = 10) {
   # browser()
   damage_reduction <- seq.int(lower_bound, upper_bound)
   dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
   
+  success <- ifelse(att_massive, success_level * 2, success_level)
+  
   probs <-
     data.table(
-      damage = pmax(0, combinations + flat_mod),
+      damage = pmax(0, combinations + flat_mod + success),
       probability = 1 / length(combinations)
     )
   probs <- probs[, lapply(.SD, sum), by = damage]
