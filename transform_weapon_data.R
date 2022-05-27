@@ -107,8 +107,15 @@ msk[grepl("Wurffähig", attributes), wurffaehig := 1, by = id]
 
 msk[grepl("Zweihändig", attributes), zweihaendig := 1, by = id]
 
+msk[, speed := as.numeric(speed)]
 msk[, 18:47] <- msk[, lapply(.SD, as.numeric), .SDcols = 18:47]
 msk[is.na(msk)] <- 0
+
+# Correct Ranged Weapons ----
+
+msk[(type == "Schusswaffen" | type == "Wurfwaffen") & grepl("Nahkampftauglich", attributes), name := paste(name, "(Fernkampf)")]
+# Addition is necessary for correcting the damage per tick in shiny
+msk[type == "Schusswaffen" | type == "Wurfwaffen", speed := speed + 3]
 
 # Check validity of scraping ----
 
