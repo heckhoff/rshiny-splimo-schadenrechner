@@ -514,7 +514,7 @@ server <- function(input, output, session) {
           paste0(x * 100, "%"),
         breaks = pretty_breaks(n = 10)
       ) +
-      theme_classic(base_size = 20) + 
+      theme_classic(base_size = 20) +
       theme(legend.position = "none")
   })
   
@@ -531,15 +531,18 @@ server <- function(input, output, session) {
       cum_prob_min = cum_prob_min,
       cum_prob_max = cum_prob_max
     ), fill = weapon)) +
-      geom_bar(stat = "identity",
-               color = "black",
-               position = position_dodge2(preserve = "single")) +
+      geom_bar(
+        stat = "identity",
+        color = "black",
+        position = position_dodge2(preserve = "single")
+      ) +
       geom_text(aes(label = switch(
         input$y_axis,
         cum_prob_min = paste0(round(cum_prob_min * 100, 1), "%"),
         # FIXME In DT
         cum_prob_max = paste0(round(cum_prob_max * 100, 1), "%") # FIXME In DT
-      )), vjust = -0.3,
+      )),
+      vjust = -0.3,
       position = position_dodge(width = 1)) +
       ggtitle(switch(
         input$y_axis,
@@ -554,7 +557,7 @@ server <- function(input, output, session) {
           paste0(x * 100, "%"),
         breaks = pretty_breaks(n = 10)
       ) +
-      theme_classic(base_size = 20) + 
+      theme_classic(base_size = 20) +
       theme(legend.position = "none")
   })
   
@@ -588,14 +591,14 @@ server <- function(input, output, session) {
   
   dmgred_table <- reactive({
     if (isTruthy(any(c(input$d6, input$d10) != 0))) {
-    create_dmgred_table(
-      comb_1(),
-      flat_mod = input$flat,
-      weapon_speed = input$speed,
-      att_penetration = input$penetration,
-      lower_bound = input$lower_bound,
-      upper_bound = input$upper_bound
-    )[, weapon := "Waffe 1"]
+      create_dmgred_table(
+        comb_1(),
+        flat_mod = input$flat,
+        weapon_speed = input$speed,
+        att_penetration = input$penetration,
+        lower_bound = input$lower_bound,
+        upper_bound = input$upper_bound
+      )[, weapon := "Waffe 1"]
     } else {
       req(any(c(input$d6, input$d10) != 0))
     }
@@ -629,21 +632,25 @@ server <- function(input, output, session) {
       error = function(e)
         dmgred_table()
     )
-    x_axis_labels <- min(x[, damage_reduction]):max(x[, damage_reduction])
+    x_axis_labels <-
+      min(x[, damage_reduction]):max(x[, damage_reduction])
     ggplot(data = x, aes(x = damage_reduction, y = switch(
       input$y_axis_dr,
       total = means,
       norm = means_per_tick
     ), fill = weapon)) +
-      geom_bar(stat = "identity",
-               color = "black",
-               position = position_dodge2(preserve = "single")) +
+      geom_bar(
+        stat = "identity",
+        color = "black",
+        position = position_dodge2(preserve = "single")
+      ) +
       geom_text(aes(label = switch(
         input$y_axis_dr,
         total = round(means, 2),
         # FIXME In DT
         norm = round(means_per_tick, 2)
-      )), vjust = -0.3,
+      )),
+      vjust = -0.3,
       position = position_dodge(width = 0.9)) + # FIXME In DT
       ggtitle("Durchschn. Schaden nach Schadensreduktion des Gegners") +
       xlab("Schadensreduktion") +
@@ -653,20 +660,20 @@ server <- function(input, output, session) {
       scale_x_continuous(breaks = x$damage_reduction) +
       #
       scale_y_continuous(breaks = pretty_breaks(n = 10)) +
-                         # sec.axis = sec_axis( trans = ~. / input$speed, name = "D. Schaden / Tick")
-                         #   labels = function(x)
-                         #     paste0(x * 100, "%"),
-                         #   breaks = pretty_breaks(n = 10)) +
-                         theme_classic(base_size = 20)
-                         })
-    
-    
-    
-    observeEvent(input$reset_input, {
-      shinyjs::reset("side-panel")
-    })
-    
-    }
+      # sec.axis = sec_axis( trans = ~. / input$speed, name = "D. Schaden / Tick")
+      #   labels = function(x)
+      #     paste0(x * 100, "%"),
+      #   breaks = pretty_breaks(n = 10)) +
+      theme_classic(base_size = 20)
+  })
+  
+  
+  
+  observeEvent(input$reset_input, {
+    shinyjs::reset("side-panel")
+  })
+  
+}
 
 # Run the application
 shinyApp(ui = ui, server = server)

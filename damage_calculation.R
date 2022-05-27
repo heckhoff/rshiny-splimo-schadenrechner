@@ -24,7 +24,7 @@ options(scipen = 999)
 # TODO Vergleich von Waffen in Plots ermöglichen
 # TODO Tabellenoutput, RMarkdown Report mit allen Plots und Werten :)
 # TODO Code effizienter gestalten, indem redundante Berechnungen (z.B. Round)
-  # direkt als cols im Table liegen
+# direkt als cols im Table liegen
 
 # TODO Think about matrix functions, writing out sample space
 #   https://www.statisticshowto.com/probability-and-statistics/probability-main-index/dice-roll-probability-6-sided-dice/
@@ -111,10 +111,9 @@ create_weapon_txt <- function(n_d6 = 0,
 # Plot Tables ----
 
 create_prob_table <- function(combinations,
-                      flat_mod = 0,
-                      damage_reduction = 0,
-                      att_penetration = 0) {
-  
+                              flat_mod = 0,
+                              damage_reduction = 0,
+                              att_penetration = 0) {
   dmg_red <- pmax(0, damage_reduction - att_penetration)
   
   dt <-
@@ -138,8 +137,10 @@ create_dmgred_table <- function(combinations,
   dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
   
   probs <-
-    data.table(damage = pmax(0, combinations + flat_mod),
-               probability = 1 / length(combinations))
+    data.table(
+      damage = pmax(0, combinations + flat_mod),
+      probability = 1 / length(combinations)
+    )
   probs <- probs[, lapply(.SD, sum), by = damage]
   
   means <-
@@ -150,7 +151,11 @@ create_dmgred_table <- function(combinations,
   # damage = pmax(0, seq.int(0, length(prob_vec) - 1) + flat_mod - damage_reduction)
   
   dmgred_table <-
-    data.table(damage_reduction = damage_reduction, means = means, means_per_tick = means / weapon_speed)
+    data.table(
+      damage_reduction = damage_reduction,
+      means = means,
+      means_per_tick = means / weapon_speed
+    )
   
   return(dmgred_table)
 }
