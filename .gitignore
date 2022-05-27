@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 journal
+damage_calculation_old.R
+matrix_approach.R

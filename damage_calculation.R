@@ -1,4 +1,3 @@
-library(ggplot2)
 library(data.table)
 
 options(scipen = 999)
@@ -16,7 +15,7 @@ options(scipen = 999)
 
 # To-Dos ----
 # Offen:
-# FIXME Aggregated 0 labels stacking
+# FIXME Exact taking an extra die for each die instead of flat!
 # FIXME Standardabweichung bei SR
 # TODO Waffenmerkmale: vielseitig
 # Vielseitige Nutzung entweder als Checkbox mitberücksichtigen und Werte
@@ -34,7 +33,7 @@ options(scipen = 999)
 # TODO Erfolgsgrad-Bestimmungen - Wuchtangriff (Merkmal wuchtig)
 # Einfache Variante: Eingabe erwarteter Erfolgsgrade
 # Schwierige Variante: Fähigkeitswert + Wurfoption Wahrscheinlichkeiten bestimmen
-# und mit Wahrscheinlichkeiten der Schadensrechnung kombinieren 
+# und mit Wahrscheinlichkeiten der Schadensrechnung kombinieren
 # (auch Fehlschläge in Durchschnittsschaden einfließen lassen etc.)
 # TODO Gegnersimulation
 # TODO bindEvent()
@@ -45,7 +44,7 @@ options(scipen = 999)
 # TODO Vergleichsfunktion mehrere Plots / ineinander
 # TODO Code kommentieren u. dokumentieren
 # TODO README schreiben
-# TODO 
+# TODO
 # TODO Bonuswürfel (z.B. Pfeilzauber wie Scharfer Wind mit anderen Attributen)
 
 # Fertig:
@@ -57,68 +56,39 @@ options(scipen = 999)
 
 # Dice Calculations ----
 
-calc_dice_avg <- function(sides, n) {
-  ((sides + 1) / 2) * n
+combine_dice <- function(n_d6 = 0,
+                         n_d10 = 0,
+                         att_exact = 0,
+                         att_sharp = 0,
+                         att_critical = 0) {
+  # browser()
+  n_dice <- n_d6 + n_d10
+  seq_d6 <-
+    if (n_d6 > 0) {
+      seq <- c(seq.int(1, 5), 6 + att_critical)
+      seq[seq %in% seq_len(att_sharp)] <- att_sharp
+      rep(list(seq), n_d6 + att_exact)
+    } else
+      0
+  
+  seq_d10 <-
+    if (n_d10 > 0) {
+      seq <- c(seq.int(1, 9), 10 + att_critical)
+      seq[seq %in% seq_len(att_sharp)] <- att_sharp
+      rep(list(seq), n_d10 + att_exact)
+    } else
+      0
+  
+  seqs <- c(seq_d6, seq_d10)
+  
+  combinations <-
+    sort(apply(expand.grid(seqs), 1, function(x)
+      sum(sort(x, decreasing = TRUE)[1:n_dice]))) # FIXME sort only if necessary
+  
+  return(combinations)
 }
 
-create_prob_vec <-
-  function(n_sides,
-           att_exact = 0,
-           att_sharp = 0,
-           att_critical = 0) {
-    
-    att_exact <- att_exact + 1
-    
-    seq <-
-      c(seq.int(1, n_sides - 1), n_sides + att_critical)
-    seq[seq %in% seq_len(att_sharp)] <- att_sharp
-    # p <- 1 / n_sides
-    # p <- seq.int(from = 1, to = n_sides * 2 - 1, by = ) * (1 / n_sides^2)
-    
-    p <- 1:n_sides
-    p <- (p^att_exact - (p - 1)^att_exact) / n_sides^att_exact
-    
-    die <- data.table(eyes = seq, prob = p)
-    die <- die[order(eyes), .(prob = sum(prob)), by = eyes]
-    
-    zeros <-
-      data.table(eyes = seq.int(0, max(die[, eyes])), prob = rep(0))
-    die <- rbind(die, zeros[!die, on = "eyes"])
-    setorder(die)
-    
-    return(die[, prob])
-  }
-
-convolve_vecs <- function(n_d6 = 0,
-                          n_d10 = 0,
-                          att_exact = 0,
-                          att_sharp = 0,
-                          att_critical = 0) {
-  if (n_d6 > 0) {
-    p6s <-
-      create_prob_vec(6, att_exact = att_exact, att_sharp = att_sharp, att_critical = att_critical)
-  } else {
-    p6s <- NA
-  }
-  
-  if (n_d10 > 0) {
-    p10s <-
-      create_prob_vec(10, att_exact = att_exact, att_sharp = att_sharp, att_critical = att_critical)
-  } else {
-    p10s <- NA
-  }
-  
-  vecs <- c(rep(list(p6s), n_d6), rep(list(p10s), n_d10))
-  
-  probs <- 1
-  
-  for (i in 1:length(vecs)) {
-    probs <- convolve(probs, rev(vecs[[i]]), type = "open")
-  }
-  
-  probs <- round(zapsmall(probs), 5)
-  return(probs)
-}
+# Text Constructions ----
 
 create_weapon_txt <- function(n_d6 = 0,
                               n_d10 = 0,
@@ -138,115 +108,49 @@ create_weapon_txt <- function(n_d6 = 0,
   )
 }
 
-# Plots ----
+# Plot Tables ----
 
-create_prob_table <- function(prob_vec,
-                              flat_mod = 0,
-                              att_penetration = 0,
-                              damage_reduction = 0) {
+create_prob_table <- function(combinations,
+                      flat_mod = 0,
+                      damage_reduction = 0,
+                      att_penetration = 0) {
   
-  damage_reduction <- pmax(0, damage_reduction - att_penetration)
-  damage_reduction_2 <- pmax(0, damage_reduction - att_penetration)
+  dmg_red <- pmax(0, damage_reduction - att_penetration)
   
-  prob_table <-
-    data.table(damage = seq.int(0, length(prob_vec) - 1), probability = prob_vec)
-  prob_table[, damage := damage + flat_mod - damage_reduction]
-  prob_table[damage < 0, damage := 0]
-
-  prob_table <- prob_table[, lapply(.SD, sum), by = damage] #
-  
-  prob_table[, cum_prob_min := rev(cumsum(rev(probability)))]
-  prob_table[damage == 0, cum_prob_min := first(cum_prob_min) / .N]
-  
-  prob_table[, cum_prob_max := cumsum(probability)]
-  prob_table[damage == 0, cum_prob_max := last(cum_prob_max) / .N]
-  
-  # min <- prob_table[prob_vec != 0, min(damage)]
-  # max <- prob_table[prob_vec != 0, max(damage)]
-  min <- prob_table[probability != 0, min(damage)]
-  max <- prob_table[probability != 0, max(damage)]
-  
-  prob_table <- prob_table[damage %between% c(min, max)]
-  return(prob_table)
+  dt <-
+    data.table(damage = combinations,
+               probability = 1 / length(combinations))
+  dt[, damage := pmax(0, damage + flat_mod - dmg_red)]
+  dt <- dt[, lapply(.SD, sum), by = damage]
+  dt[, cum_prob_min := rev(cumsum(rev(probability)))]
+  dt[, cum_prob_max := cumsum(probability)]
+  return(dt)
 }
 
-create_dmgred_table <- function(prob_vec,
+create_dmgred_table <- function(combinations,
                                 flat_mod = 0,
+                                weapon_speed = 1,
                                 att_penetration = 0,
                                 lower_bound = 0,
                                 upper_bound = 10) {
-  
-  # probability <-
-  #   convolve_vecs(
-  #     n_d6 = n_d6,
-  #     n_d10 = n_d10,
-  #     att_exact = att_exact,
-  #     att_sharp = att_sharp,
-  #     att_critical = att_critical
-  #   )
-  
   # browser()
   damage_reduction <- seq.int(lower_bound, upper_bound)
   dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
   
-  means <- sapply(dmgred_pen_diff, function(x) {pmax(0, seq.int(0, length(prob_vec) - 1) + flat_mod - x)})
-  means <- as.vector(prob_vec %*% means)
+  probs <-
+    data.table(damage = pmax(0, combinations + flat_mod),
+               probability = 1 / length(combinations))
+  probs <- probs[, lapply(.SD, sum), by = damage]
+  
+  means <-
+    sapply(dmgred_pen_diff, function(x) {
+      pmax(0, probs[, damage] - x)
+    })
+  means <- as.vector(probs[, probability] %*% means)
   # damage = pmax(0, seq.int(0, length(prob_vec) - 1) + flat_mod - damage_reduction)
   
-  dmgred_table <- data.table(damage_reduction = damage_reduction, means = means)
+  dmgred_table <-
+    data.table(damage_reduction = damage_reduction, means = means, means_per_tick = means / weapon_speed)
   
-  # 
-  # round(sum(damage * prob_vec), 2)
-  # 
-  # damage_reduction <- seq.int(lower_bound, upper_bound)
-  # browser()
-  # n <- length(prob_vec)
-  # m_dmg <- matrix(rep(0, n^2), ncol = n, nrow = n)
-  # m_dmg[upper.tri(m_dmg)] <- (col(m_dmg)  - row(m_dmg))[upper.tri(m_dmg)]
-  # 
-  # mean_damage <- c((m_dmg + flat_mod) %*% prob_vec)
-  # 
-  # mean_damage <- c(rep(mean_damage[1], match(0, damage_reduction - att_penetration) - 1), pmax(0, mean_damage))[1:length(mean_damage)]
-  # # damage_vec <- c(rep(0, 1 + damage_reduction), length(probs - 1))
-  # # 
-  # # mean_damage <- #
-  # # pmax(0, mean_damage - pmax(0, damage_reduction - att_penetration)) #
-  # 
-  # # mean_damage <- sum(damage_vec*probability)
-  # 
-  # # 2W6 sum(c(rep(0, 1), seq_len(12))*probability)
-  # dmgred_table <-
-  #   data.table(damage = mean_damage, damage_reduction = seq.int(0, length(mean_damage) - 1))
-  # 
-  # dmgred_table <- dmgred_table[damage_reduction %between% c(lower_bound, upper_bound)]
-  # return(dmgred_table)
+  return(dmgred_table)
 }
-
-# create_dmgred_table <- function(prob_vec,
-#                                 flat_mod = 0,
-#                                 att_penetration = 0,
-#                                 lower_bound = 0,
-#                                 upper_bound = 10) {
-#   damage_reduction <- seq.int(lower_bound, upper_bound)
-#   browser()
-#   n <- length(prob_vec)
-#   m_dmg <- matrix(rep(0, n^2), ncol = n, nrow = n)
-#   m_dmg[upper.tri(m_dmg)] <- (col(m_dmg)  - row(m_dmg))[upper.tri(m_dmg)]
-#   
-#   mean_damage <- c((m_dmg + flat_mod) %*% prob_vec)
-# 
-#   mean_damage <- c(rep(mean_damage[1], match(0, damage_reduction - att_penetration) - 1), pmax(0, mean_damage))[1:length(mean_damage)]
-#   # damage_vec <- c(rep(0, 1 + damage_reduction), length(probs - 1))
-#   # 
-#   # mean_damage <- #
-#     # pmax(0, mean_damage - pmax(0, damage_reduction - att_penetration)) #
-#   
-#   # mean_damage <- sum(damage_vec*probability)
-#   
-#   # 2W6 sum(c(rep(0, 1), seq_len(12))*probability)
-#   dmgred_table <-
-#     data.table(damage = mean_damage, damage_reduction = seq.int(0, length(mean_damage) - 1))
-#   
-#   dmgred_table <- dmgred_table[damage_reduction %between% c(lower_bound, upper_bound)]
-#   return(dmgred_table)
-# }

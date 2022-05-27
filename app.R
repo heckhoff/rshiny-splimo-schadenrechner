@@ -335,10 +335,10 @@ server <- function(input, output, session) {
     updateCollapse(session, "weapons", open = "weapon_1")
   }))
   
-  prob_vec <-
+  comb_1 <-
     reactive({
       req(any(c(input$d6, input$d10) != 0))
-      convolve_vecs(
+      combine_dice(
         n_d6 = input$d6,
         n_d10 = input$d10,
         att_exact = input$exact,
@@ -347,10 +347,10 @@ server <- function(input, output, session) {
       )
     })
   
-  prob_vec_2 <-
+  comb_2 <-
     reactive({
       req(any(c(input$d6_2, input$d10_2) != 0))
-      convolve_vecs(
+      combine_dice(
         n_d6 = input$d6_2,
         n_d10 = input$d10_2,
         att_exact = input$exact_2,
@@ -362,7 +362,7 @@ server <- function(input, output, session) {
   prob_table <- reactive({
     if (isTruthy(any(c(input$d6, input$d10) != 0))) {
       create_prob_table(
-        prob_vec(),
+        comb_1(),
         flat_mod = input$flat,
         att_penetration = input$penetration,
         damage_reduction = input$dmg_reduction
@@ -375,7 +375,7 @@ server <- function(input, output, session) {
   prob_table_2 <- reactive({
     if (isTruthy(any(c(input$d6_2, input$d10_2) != 0))) {
       create_prob_table(
-        prob_vec_2(),
+        comb_2(),
         flat_mod = input$flat_2,
         att_penetration = input$penetration_2,
         damage_reduction = input$dmg_reduction
@@ -385,7 +385,7 @@ server <- function(input, output, session) {
     }
   })
   
-  table <- reactive({
+  prob_tables <- reactive({
     req(isTruthy(prob_table()) && isTruthy(prob_table_2()))
     rbindlist(list("Waffe 1" = prob_table(), "Waffe 2" = prob_table_2()))
   })
@@ -401,6 +401,15 @@ server <- function(input, output, session) {
     print_weapon_txt()
   })
   
+  print_weapon_txt_2 <-
+    reactive(paste(
+      "Ausgewählte Waffe:",
+      create_weapon_txt(input$d6_2, input$d10_2, input$flat_2)
+    ))
+  output$weapon_2 <- renderText({
+    print_weapon_txt_2()
+  })
+  
   # Calculate Average Damage
   mean_damage <-
     reactive(round(prob_table()[, sum(damage * probability)], 2))
@@ -410,6 +419,16 @@ server <- function(input, output, session) {
                    mean_damage()))
   output$mean_dmg <- renderText({
     print_mean_damage()
+  })
+  
+  mean_damage_2 <-
+    reactive(round(prob_table_2()[, sum(damage * probability)], 2))
+  # Print Average Damage
+  print_mean_damage_2 <-
+    reactive(paste("Durchschn. Schaden:",
+                   mean_damage_2()))
+  output$mean_dmg_2 <- renderText({
+    print_mean_damage_2()
   })
   
   # Print Average Damage per Tick
@@ -428,6 +447,21 @@ server <- function(input, output, session) {
     print_mean_damage_per_tick()
   })
   
+  print_mean_damage_per_tick_2 <-
+    reactive(paste(
+      "Durchschn. Schaden pro Tick:",
+      fifelse(
+        input$speed_2 != 0,
+        # FIXME
+        yes =
+          round(prob_table_2()[, sum(damage * probability)] / input$speed_2, 2),
+        no = 0
+      )
+    ))
+  output$mean_dmg_per_tick_2 <- renderText({
+    print_mean_damage_per_tick_2()
+  })
+  
   # Print Damage Standard Deviation
   sd_damage <-
     reactive(paste("Durchschnittliche Abweichung:",
@@ -440,11 +474,22 @@ server <- function(input, output, session) {
     sd_damage()
   })
   
+  sd_damage_2 <-
+    reactive(paste("Durchschnittliche Abweichung:",
+                   round(prob_table_2()
+                         [, sqrt(sum((damage - sum(
+                           damage * probability
+                         ))
+                         ^ 2 * probability))], 2)))
+  output$sd_dmg_2 <- renderText({
+    sd_damage_2()
+  })
+  
   ## Plots ----
   # Plot Probability Distribution
   output$dist_plot <- renderPlot({
     x <- tryCatch(
-      table(),
+      prob_tables(),
       error = function(e)
         prob_table()
     )
@@ -459,7 +504,7 @@ server <- function(input, output, session) {
         probability * 100, 1
       ), "%")),
       vjust = -0.3,
-      position = position_dodge(width = 0.9)) + # FIXME In DT
+      position = position_dodge(width = 1)) + # FIXME In DT
       ggtitle("Wahrscheinlichkeitsverteilung des Schadens") +
       xlab("Schaden") +
       ylab("Wahrscheinlichkeit in %") +
@@ -469,27 +514,33 @@ server <- function(input, output, session) {
           paste0(x * 100, "%"),
         breaks = pretty_breaks(n = 10)
       ) +
-      theme_classic(base_size = 20)
+      theme_classic(base_size = 20) + 
+      theme(legend.position = "none")
   })
   
   # Plot Cumulative Probability Distribution
   output$cum_dist_plot <- renderPlot({
-    x <- prob_table()
-    # x_axis_labels <- min(x[, damage]):max(x[, damage])
+    x <- tryCatch(
+      prob_tables(),
+      error = function(e)
+        prob_table()
+    )
+    x_axis_labels <- min(x[, damage]):max(x[, damage])
     ggplot(data = x, aes(x = damage, y = switch(
       input$y_axis,
       cum_prob_min = cum_prob_min,
       cum_prob_max = cum_prob_max
-    ))) +
+    ), fill = weapon)) +
       geom_bar(stat = "identity",
                color = "black",
-               fill = "dodgerblue1") +
+               position = position_dodge2(preserve = "single")) +
       geom_text(aes(label = switch(
         input$y_axis,
         cum_prob_min = paste0(round(cum_prob_min * 100, 1), "%"),
         # FIXME In DT
         cum_prob_max = paste0(round(cum_prob_max * 100, 1), "%") # FIXME In DT
-      )), vjust = -0.3) +
+      )), vjust = -0.3,
+      position = position_dodge(width = 1)) +
       ggtitle(switch(
         input$y_axis,
         cum_prob_min = "Kumulierte Wahrscheinlichkeiten (Mindestschaden)",
@@ -497,13 +548,14 @@ server <- function(input, output, session) {
       )) +
       xlab("Schaden") +
       ylab("Wahrscheinlichkeit in %") +
-      # scale_x_continuous(labels = x_axis_labels, breaks = x_axis_labels) +
+      scale_x_continuous(labels = x_axis_labels, breaks = x_axis_labels) +
       scale_y_continuous(
         labels = function(x)
           paste0(x * 100, "%"),
         breaks = pretty_breaks(n = 10)
       ) +
-      theme_classic(base_size = 20)
+      theme_classic(base_size = 20) + 
+      theme(legend.position = "none")
   })
   
   observe({
@@ -520,39 +572,79 @@ server <- function(input, output, session) {
     }
   })
   
+  observe({
+    if (all(c(input$d6_2, input$d10_2) == 0)) {
+      hide("weapon_2")
+      hide("mean_dmg_2")
+    } else {
+      show("weapon_2")
+      show("mean_dmg_2")
+    }
+  })
+  
   # Tab 2 ----
   
   observe(updateSliderInput(session, "lower_bound", max = input$upper_bound - 1))
   
   dmgred_table <- reactive({
-    req(any(c(input$d6, input$d10) != 0))
+    if (isTruthy(any(c(input$d6, input$d10) != 0))) {
     create_dmgred_table(
-      prob_vec = prob_vec(),
+      comb_1(),
       flat_mod = input$flat,
+      weapon_speed = input$speed,
       att_penetration = input$penetration,
       lower_bound = input$lower_bound,
       upper_bound = input$upper_bound
-    )
+    )[, weapon := "Waffe 1"]
+    } else {
+      req(any(c(input$d6, input$d10) != 0))
+    }
   })
+  
+  dmgred_table_2 <- reactive({
+    if (isTruthy(any(c(input$d6_2, input$d10_2) != 0))) {
+      create_dmgred_table(
+        comb_2(),
+        flat_mod = input$flat_2,
+        weapon_speed = input$speed_2,
+        att_penetration = input$penetration_2,
+        lower_bound = input$lower_bound,
+        upper_bound = input$upper_bound
+      )[, weapon := "Waffe 2"]
+    } else {
+      req(any(c(input$d6_2, input$d10_2) != 0))
+    }
+  })
+  
+  dmgred_tables <- reactive({
+    req(isTruthy(dmgred_table()) && isTruthy(dmgred_table_2()))
+    rbindlist(list("Waffe 1" = dmgred_table(), "Waffe 2" = dmgred_table_2()))
+  })
+  
   
   ## Plots ----
   output$dmgred_plot <- renderPlot({
-    x <- dmgred_table()
-    # x_axis_labels <- min(x[, damage_reduction]):max(x[, damage_reduction])
+    x <- tryCatch(
+      dmgred_tables(),
+      error = function(e)
+        dmgred_table()
+    )
+    x_axis_labels <- min(x[, damage_reduction]):max(x[, damage_reduction])
     ggplot(data = x, aes(x = damage_reduction, y = switch(
       input$y_axis_dr,
       total = means,
-      norm = means / input$speed
-    ))) +
+      norm = means_per_tick
+    ), fill = weapon)) +
       geom_bar(stat = "identity",
                color = "black",
-               fill = "orange") +
+               position = position_dodge2(preserve = "single")) +
       geom_text(aes(label = switch(
         input$y_axis_dr,
         total = round(means, 2),
         # FIXME In DT
-        norm = round(means / input$speed, 2)
-      ), vjust = -0.3)) + # FIXME In DT
+        norm = round(means_per_tick, 2)
+      )), vjust = -0.3,
+      position = position_dodge(width = 0.9)) + # FIXME In DT
       ggtitle("Durchschn. Schaden nach Schadensreduktion des Gegners") +
       xlab("Schadensreduktion") +
       ylab(switch(input$y_axis_dr,
