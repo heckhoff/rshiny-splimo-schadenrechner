@@ -6,7 +6,6 @@ library(shinyjs)
 library(shinyBS)
 library(ggplot2)
 library(scales)
-library(openxlsx)
 
 source("damage_calculation.R")
 
@@ -107,11 +106,10 @@ ui <- fluidPage(
                 title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
                 trigger = "hover"
               ),
-              checkboxInput(
-                "massive",
-                "Wuchtig",
-                value = FALSE
-              ),
+              materialSwitch("massive",
+                             "Wuchtig",
+                             value = FALSE,
+                             status = "primary"),
               bsTooltip(
                 id = "massive",
                 title = "Bei Waffen mit diesem Merkmal verursacht das freie Manöver Wuchtangriff 2 statt 1 zusätzlichen Punkt Schaden pro eingesetzten Erfolgsgrad.",
@@ -143,235 +141,272 @@ ui <- fluidPage(
                 id = "sharp",
                 title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
                 trigger = "hover"
-              )
+              ),
+              materialSwitch(
+                "versatile",
+                "Vielseitig",
+                value = FALSE,
+                status = "primary"
+              ),
+              bsTooltip(
+                # FIXME
+                id = "wield",
+                title = "Bei vielseitigen Waffen kann zwischen einhändiger und zweihändiger Führung gewechselt werden. In zweihändiger Führung erhöht sich ihr
+Schaden um 3 Punkte.",
+trigger = "hover"
+              ),
+radioGroupButtons(
+  inputId = "wield",
+  choices = c("Einhändig" = FALSE, "Zweihändig" = TRUE),
+  status = "primary"
+)
+
+
             )
           ),
-          br(),
-          
-          actionButton("button", "➕ Weitere Waffe hinzufügen")
+br(),
+
+actionButton("button", "➕ Weitere Waffe hinzufügen")
         ),
-        bsCollapsePanel(
-          "weapon_2",
-          fluidRow(
-            pickerInput(
-              "select_weapon_2",
-              "Waffe auswählen:",
-              choices = data[, name],
-              multiple = TRUE,
-              options = pickerOptions(maxOptions = 1)
-            ),
-            column(4,
-                   numericInput(
-                     "d6_2",
-                     "Anzahl W6",
-                     min = 0,
-                     max = 8,
-                     value = 0
-                   )),
-            column(4,
-                   numericInput(
-                     "d10_2",
-                     "Anzahl W10",
-                     min = 0,
-                     max = 5,
-                     value = 0
-                   )),
-            column(4,
-                   numericInput("flat_2",
-                                "Modifikator",
-                                value = 0))
-          ),
-          
-          numericInput(
-            "speed_2",
-            "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
-            min = 1,
-            value = 1
-          ),
-          
-          ## Textoutput ----
-          br(),
-          textOutput("weapon_2"),
-          # br(),
-          textOutput("mean_dmg_2"),
-          # br(),
-          textOutput("mean_dmg_per_tick_2"),
-          # br(),
-          textOutput("sd_dmg_2"),
-          br(),
-          
-          ## Waffenmerkmale ----
-          h4("Waffenmerkmale:"),
-          fluidRow(
-            column(
-              6,
-              sliderInput(
-                "exact_2",
-                "Exakt",
-                min = 0,
-                max = 3,
-                value = 0
-              ),
-              bsTooltip(
-                id = "exact_2",
-                title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnisse zählen für den Schadenswurf.",
-                trigger = "hover"
-              ),
-              sliderInput(
-                "critical_2",
-                "Kritisch",
-                min = 0,
-                max = 5,
-                value = 0
-              ),
-              bsTooltip(
-                id = "critical_2",
-                title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
-                trigger = "hover"
-              ),
-              checkboxInput(
-                "massive_2",
-                "Wuchtig",
-                value = FALSE
-              ),
-              bsTooltip(
-                id = "massive_2",
-                title = "Bei Waffen mit diesem Merkmal verursacht das freie Manöver Wuchtangriff 2 statt 1 zusätzlichen Punkt Schaden pro eingesetzten Erfolgsgrad.",
-                trigger = "hover"
-              )
-            ),
-            column(
-              6,
-              sliderInput(
-                "penetration_2",
-                "Durchdringung",
-                min = 0,
-                max = 6,
-                value = 0
-              ),
-              bsTooltip(
-                id = "penetration_2",
-                title = "Für jede Stufe dieses Merkmals kann 1 Punkt der gegnerischen Schadensreduktion ignoriert werden, egal aus welcher Quelle diese stammt.",
-                trigger = "hover"
-              ),
-              sliderInput(
-                "sharp_2",
-                "Scharf",
-                min = 0,
-                max = 5,
-                value = 0
-              ),
-              bsTooltip(
-                id = "sharp_2",
-                title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
-                trigger = "hover"
-              )
-            )
-          ),
-          br(),
-          actionButton("button_2", "Zurück zu Waffe 1")
-        )
-      ),
-      
-      # Schadensreduktion ----
-      conditionalPanel(
-        condition = "input.tab_selected == 1",
-        h4("Weitere Parameter:"),
-        sliderInput(
-          "dmg_reduction",
-          "Simulierte Schadensreduktion",
-          min = 0,
-          max = 10,
-          value = 0
-        ),
-        bsTooltip(
-          id = "dmg_reduction",
-          title = "Die Schadensreduktion einer Rüstung wird von dem Schaden jedes erfolgreichen Angriffs gegen den Träger abgezogen.",
-          trigger = "hover"
-        ),
-        sliderInput(
-          "success_lvl",
-          "Für Wuchtangriff genutzte Erfolgsgrade",
-          min = 0,
-          max = 10,
-          value = 0
-        ),
-        bsTooltip(
-          id = "success_lvl",
-          title = "Für jeden aufgewendeten Erfolgsgrad richtet der Angriff einen zusätzlichen Punkt Schaden an.",
-          trigger = "hover"
-        )
-      ),
-      
-      conditionalPanel(
-        condition = "input.tab_selected == 2",
-        h4("Grenzen der Schadensreduktion:"),
-        column(
-          6,
-          numericInput(
-            "lower_bound",
-            "Untere Grenze",
-            min = 0,
-            max = 9,
-            value = 0
-          )
-        ),
-        column(
-          6,
-          numericInput(
-            "upper_bound",
-            "Obere Grenze",
-            min = 1,
-            max = 25,
-            value = 10
-          )
-        )
-      ),
-      
-      br(),
-      actionButton("reset_input", "Eingabe zurücksetzen"),
+bsCollapsePanel(
+  "weapon_2",
+  fluidRow(
+    pickerInput(
+      "select_weapon_2",
+      "Waffe auswählen:",
+      choices = data[, name],
+      multiple = TRUE,
+      options = pickerOptions(maxOptions = 1)
     ),
-    
-    
-    ## Main-Panel ----
-    # Show a plot of the generated distribution
-    mainPanel(tabsetPanel(
-      tabPanel(
-        "Wahrscheinlichkeiten",
-        value = 1,
-        plotOutput("dist_plot", height = "320px"),
-        br(),
-        selectInput(
-          "y_axis",
-          "Darstellung der kumulierten Grafik",
-          choices = list(
-            "mindestens x oder höher" = "cum_prob_min",
-            "maximal x oder niedriger" = "cum_prob_max"
-          )
-        ),
-        plotOutput("cum_dist_plot", height = "320px")
+    column(4,
+           numericInput(
+             "d6_2",
+             "Anzahl W6",
+             min = 0,
+             max = 8,
+             value = 0
+           )),
+    column(4,
+           numericInput(
+             "d10_2",
+             "Anzahl W10",
+             min = 0,
+             max = 5,
+             value = 0
+           )),
+    column(4,
+           numericInput("flat_2",
+                        "Modifikator",
+                        value = 0))
+  ),
+  
+  numericInput(
+    "speed_2",
+    "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
+    min = 1,
+    value = 1
+  ),
+  
+  ## Textoutput ----
+  br(),
+  textOutput("weapon_2"),
+  # br(),
+  textOutput("mean_dmg_2"),
+  # br(),
+  textOutput("mean_dmg_per_tick_2"),
+  # br(),
+  textOutput("sd_dmg_2"),
+  br(),
+  
+  ## Waffenmerkmale ----
+  h4("Waffenmerkmale:"),
+  fluidRow(
+    column(
+      6,
+      sliderInput(
+        "exact_2",
+        "Exakt",
+        min = 0,
+        max = 3,
+        value = 0
       ),
-      tabPanel(
-        "Schadensreduktion",
-        value = 2,
-        plotOutput("dmgred_plot", width = "85%", height = "450px"),
-        selectInput(
-          "y_axis_dr",
-          "Art des durchschnittlichen Schadens",
-          choices = list(
-            "Durchschnittlicher Schaden" = "total",
-            "Durchschnittlicher Schaden pro Tick" = "norm"
-          )
-        )
+      bsTooltip(
+        id = "exact_2",
+        title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnisse zählen für den Schadenswurf.",
+        trigger = "hover"
       ),
-      id = "tab_selected"
-    ))
+      sliderInput(
+        "critical_2",
+        "Kritisch",
+        min = 0,
+        max = 5,
+        value = 0
+      ),
+      bsTooltip(
+        id = "critical_2",
+        title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
+        trigger = "hover"
+      ),
+      materialSwitch("massive_2",
+                     "Wuchtig",
+                     value = FALSE,
+                     status = "danger"),
+      bsTooltip(
+        id = "massive_2",
+        title = "Bei Waffen mit diesem Merkmal verursacht das freie Manöver Wuchtangriff 2 statt 1 zusätzlichen Punkt Schaden pro eingesetzten Erfolgsgrad.",
+        trigger = "hover"
+      )
+    ),
+    column(
+      6,
+      sliderInput(
+        "penetration_2",
+        "Durchdringung",
+        min = 0,
+        max = 6,
+        value = 0
+      ),
+      bsTooltip(
+        id = "penetration_2",
+        title = "Für jede Stufe dieses Merkmals kann 1 Punkt der gegnerischen Schadensreduktion ignoriert werden, egal aus welcher Quelle diese stammt.",
+        trigger = "hover"
+      ),
+      sliderInput(
+        "sharp_2",
+        "Scharf",
+        min = 0,
+        max = 5,
+        value = 0
+      ),
+      bsTooltip(
+        id = "sharp_2",
+        title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
+        trigger = "hover"
+      ),
+      materialSwitch(
+        "versatile_2",
+        "Vielseitig",
+        value = FALSE,
+        status = "danger"
+      ),
+      bsTooltip(
+        # FIXME
+        id = "wield_2",
+        title = "Bei vielseitigen Waffen kann zwischen einhändiger und zweihändiger Führung gewechselt werden. In zweihändiger Führung erhöht sich ihr Schaden um 3 Punkte.",
+        trigger = "hover"
+      ),
+      radioGroupButtons(
+        inputId = "wield_2",
+        choices = c("Einhändig" = FALSE, "Zweihändig" = TRUE),
+        status = "primary"
+      )
+    )
+  ),
+  br(),
+  actionButton("button_2", "Zurück zu Waffe 1")
+)
+      ),
+
+# Schadensreduktion ----
+conditionalPanel(
+  condition = "input.tab_selected == 1",
+  h4("Weitere Parameter:"),
+  sliderInput(
+    "dmg_reduction",
+    "Simulierte Schadensreduktion",
+    min = 0,
+    max = 10,
+    value = 0
+  ),
+  bsTooltip(
+    id = "dmg_reduction",
+    title = "Die Schadensreduktion einer Rüstung wird von dem Schaden jedes erfolgreichen Angriffs gegen den Träger abgezogen.",
+    trigger = "hover"
+  ),
+  sliderInput(
+    "success_lvl",
+    "Für Wuchtangriff genutzte Erfolgsgrade",
+    min = 0,
+    max = 10,
+    value = 0
+  ),
+  bsTooltip(
+    id = "success_lvl",
+    title = "Für jeden aufgewendeten Erfolgsgrad richtet der Angriff einen zusätzlichen Punkt Schaden an.",
+    trigger = "hover"
+  )
+),
+
+conditionalPanel(
+  condition = "input.tab_selected == 2",
+  h4("Grenzen der Schadensreduktion/Erfolgsgrade:"),
+  column(
+    6,
+    numericInput(
+      "lower_bound",
+      "Untere Grenze",
+      min = 0,
+      max = 9,
+      value = 0
+    )
+  ),
+  column(
+    6,
+    numericInput(
+      "upper_bound",
+      "Obere Grenze",
+      min = 1,
+      max = 25,
+      value = 10
+    )
+  )
+),
+
+br(),
+actionButton("reset_input", "Eingabe zurücksetzen"),
+    ),
+
+
+## Main-Panel ----
+# Show a plot of the generated distribution
+mainPanel(tabsetPanel(
+  tabPanel(
+    "Wahrscheinlichkeiten",
+    value = 1,
+    plotOutput("dist_plot", height = "320px"),
+    br(),
+    selectInput(
+      "y_axis",
+      "Darstellung der kumulierten Grafik",
+      choices = list(
+        "mindestens x oder höher" = "cum_prob_min",
+        "maximal x oder niedriger" = "cum_prob_max"
+      )
+    ),
+    plotOutput("cum_dist_plot", height = "320px")
+  ),
+  tabPanel(
+    "Schadensreduktion",
+    value = 2,
+    plotOutput("dmgred_plot", height = "320px"),
+    br(),
+    plotOutput("slvls_plot", height = "320px"),
+    selectInput(
+      "y_axis_dr",
+      "Art des durchschnittlichen Schadens",
+      choices = list(
+        "Durchschnittlicher Schaden" = "total",
+        "Durchschnittlicher Schaden pro Tick" = "norm"
+      ),
+      selected = "norm"
+    )
+  ),
+  id = "tab_selected"
+))
   )
 )
 
 
-# Backend ----
-# Define server logic required to draw a histogram
 server <- function(input, output, session) {
   # Tab 1 ----
   
@@ -383,6 +418,9 @@ server <- function(input, output, session) {
   observeEvent(input$button_2, ({
     updateCollapse(session, "weapons", open = "weapon_1")
   }))
+  
+  hide("wield")
+  hide("wield_2")
   
   ## Create objects ----
   
@@ -426,7 +464,8 @@ server <- function(input, output, session) {
         att_penetration = input$penetration,
         damage_reduction = input$dmg_reduction,
         success_level = input$success_lvl,
-        att_massive = input$massive
+        att_massive = input$massive,
+        att_versatile = input$wield
       )[, weapon := "Waffe 1"]
     } else {
       req(any(c(input$d6, input$d10) != 0))
@@ -441,7 +480,8 @@ server <- function(input, output, session) {
         att_penetration = input$penetration_2,
         damage_reduction = input$dmg_reduction,
         success_level = input$success_lvl,
-        att_massive = input$massive
+        att_massive = input$massive_2,
+        att_versatile = input$wield_2
       )[, weapon := "Waffe 2"]
     } else {
       req(any(c(input$d6_2, input$d10_2) != 0))
@@ -454,6 +494,7 @@ server <- function(input, output, session) {
   })
   
   ## Textoutput ----
+  # FIXME Print like sd_damage (in one)
   # Print Selected Weapon
   print_weapon_txt <-
     reactive(paste(
@@ -537,6 +578,7 @@ server <- function(input, output, session) {
     sd_damage()
   })
   
+  
   sd_damage_2 <-
     reactive(paste("Durchschnittliche Abweichung:",
                    round(prob_table_2()
@@ -564,11 +606,9 @@ server <- function(input, output, session) {
         position = position_dodge2(preserve = "single")
       ) +
       scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
-      geom_text(aes(label = paste0(round(
-        probability * 100, 1
-      ), "%")),
-      vjust = -0.3,
-      position = position_dodge(width = 0.9)) + # FIXME In DT
+      geom_text(aes(label = round(probability * 100, 1)),
+                vjust = -0.3,
+                position = position_dodge(width = 0.9)) + # FIXME In DT
       ggtitle("Wahrscheinlichkeitsverteilung des Schadens") +
       xlab("Schaden") +
       ylab("Wahrscheinlichkeit in %") +
@@ -603,9 +643,9 @@ server <- function(input, output, session) {
       scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
       geom_text(aes(label = switch(
         input$y_axis,
-        cum_prob_min = paste0(round(cum_prob_min * 100, 1), "%"),
+        cum_prob_min = round(cum_prob_min * 100, 1),
         # FIXME In DT
-        cum_prob_max = paste0(round(cum_prob_max * 100, 1), "%") # FIXME In DT
+        cum_prob_max = round(cum_prob_max * 100, 1) # FIXME In DT
       )),
       vjust = -0.3,
       position = position_dodge(width = 0.9)) +
@@ -663,6 +703,7 @@ server <- function(input, output, session) {
         att_penetration = input$penetration,
         success_level = input$success_lvl,
         att_massive = input$massive,
+        att_versatile = input$wield,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
       )[, weapon := "Waffe 1"]
@@ -680,6 +721,7 @@ server <- function(input, output, session) {
         att_penetration = input$penetration_2,
         success_level = input$success_lvl,
         att_massive = input$massive_2,
+        att_versatile = input$wield_2,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
       )[, weapon := "Waffe 2"]
@@ -694,7 +736,49 @@ server <- function(input, output, session) {
   })
   
   
+  slvls_table <- reactive({
+    if (isTruthy(any(c(input$d6, input$d10) != 0))) {
+      create_slvls_table(
+        comb_1(),
+        flat_mod = input$flat,
+        weapon_speed = input$speed,
+        damage_reduction = input$dmg_reduction,
+        att_penetration = input$penetration,
+        att_massive = input$massive,
+        att_versatile = input$wield,
+        lower_bound = input$lower_bound,
+        upper_bound = input$upper_bound
+      )[, weapon := "Waffe 1"]
+    } else {
+      req(any(c(input$d6, input$d10) != 0))
+    }
+  })
+  
+  slvls_table_2 <- reactive({
+    if (isTruthy(any(c(input$d6_2, input$d10_2) != 0))) {
+      create_slvls_table(
+        comb_2(),
+        flat_mod = input$flat_2,
+        weapon_speed = input$speed_2,
+        damage_reduction = input$dmg_reduction,
+        att_penetration = input$penetration_2,
+        att_massive = input$massive_2,
+        att_versatile = input$wield_2,
+        lower_bound = input$lower_bound,
+        upper_bound = input$upper_bound
+      )[, weapon := "Waffe 2"]
+    } else {
+      req(any(c(input$d6_2, input$d10_2) != 0))
+    }
+  })
+  
+  slvls_tables <- reactive({
+    req(isTruthy(slvls_table()) && isTruthy(slvls_table_2()))
+    rbindlist(list("Waffe 1" = slvls_table(), "Waffe 2" = slvls_table_2()))
+  })
+  
   ## Plots ----
+  
   output$dmgred_plot <- renderPlot({
     x <- tryCatch(
       dmgred_tables(),
@@ -716,9 +800,9 @@ server <- function(input, output, session) {
       scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
       geom_text(aes(label = switch(
         input$y_axis_dr,
-        total = round(means, 2),
+        total = round(means, 1),
         # FIXME In DT
-        norm = round(means_per_tick, 2)
+        norm = round(means_per_tick, 1)
       )),
       vjust = -0.3,
       position = position_dodge(width = 0.9)) + # FIXME In DT
@@ -726,21 +810,55 @@ server <- function(input, output, session) {
       xlab("Schadensreduktion") +
       ylab(switch(input$y_axis_dr,
                   total = "Durchschn. Schaden",
-                  norm = "Durchschn. Schaden / Tick")) +
+                  norm = "D. Schaden / Tick")) +
       scale_x_continuous(breaks = x$damage_reduction) +
-      #
       scale_y_continuous(breaks = pretty_breaks(n = 10)) +
-      # sec.axis = sec_axis( trans = ~. / input$speed, name = "D. Schaden / Tick")
-      #   labels = function(x)
-      #     paste0(x * 100, "%"),
-      #   breaks = pretty_breaks(n = 10)) +
-      theme_classic(base_size = 20)
+      theme_classic(base_size = 20) +
+      theme(legend.position = "none")
+  })
+  
+  output$slvls_plot <- renderPlot({
+    x <- tryCatch(
+      slvls_tables(),
+      error = function(e)
+        slvls_table()
+    )
+    x_axis_labels <-
+      min(x[, success_lvls]):max(x[, success_lvls])
+    ggplot(data = x, aes(x = success_lvls, y = switch(
+      input$y_axis_dr,
+      total = means,
+      norm = means_per_tick
+    ), fill = weapon)) +
+      geom_bar(
+        stat = "identity",
+        color = "black",
+        position = position_dodge2(preserve = "single")
+      ) +
+      scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
+      geom_text(aes(label = switch(
+        input$y_axis_dr,
+        total = round(means, 1),
+        # FIXME In DT
+        norm = round(means_per_tick, 1)
+      )),
+      vjust = -0.3,
+      position = position_dodge(width = 0.9)) + # FIXME In DT
+      ggtitle("Durchschn. Schaden nach für 'Wuchtangriff' eingesetzten EG") +
+      xlab("Für Wuchtangriff eingesetzte EG") +
+      ylab(switch(input$y_axis_dr,
+                  total = "Durchschn. Schaden",
+                  norm = "D. Schaden / Tick")) +
+      scale_x_continuous(breaks = x$success_lvls) +
+      scale_y_continuous(breaks = pretty_breaks(n = 10)) +
+      theme_classic(base_size = 20) +
+      theme(legend.position = "none")
   })
   
   # Update / Reset inputs ----
   
   ## Weapon 1 ----
-
+  
   observeEvent(
     input$select_weapon_1,
     updateNumericInput(session, "d6", value = sel_weapon_1()$n_d6)
@@ -784,6 +902,19 @@ server <- function(input, output, session) {
   observeEvent(
     input$select_weapon_1,
     updateCheckboxInput(session, "massive", value = sel_weapon_1()$wuchtig)
+  )
+  
+  observe(if (input$versatile == FALSE) {
+    hide("wield")
+    updateRadioGroupButtons(session, "wield", selected = FALSE)
+  } else {
+    show("wield")
+    updateRadioGroupButtons(session, "wield", selected = TRUE)
+  })
+  
+  observeEvent(
+    input$select_weapon_1,
+    updateMaterialSwitch(session, "versatile", value = sel_weapon_1()$vielseitig)
   )
   
   ## Weapon 2 ----
@@ -832,6 +963,20 @@ server <- function(input, output, session) {
     input$select_weapon_2,
     updateCheckboxInput(session, "massive_2", value = sel_weapon_2()$wuchtig)
   )
+  
+  observe(if (input$versatile_2 == FALSE) {
+    hide("wield_2")
+    updateRadioGroupButtons(session, "wield_2", selected = FALSE)
+  } else {
+    show("wield_2")
+    updateRadioGroupButtons(session, "wield_2", selected = TRUE)
+  })
+  
+  observeEvent(
+    input$select_weapon_2,
+    updateMaterialSwitch(session, "versatile_2", value = sel_weapon_2()$vielseitig)
+  )
+  
   
   observeEvent(input$reset_input, {
     shinyjs::reset("side-panel")

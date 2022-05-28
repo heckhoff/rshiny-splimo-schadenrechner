@@ -120,10 +120,12 @@ create_prob_table <- function(combinations,
                               damage_reduction = 0,
                               att_penetration = 0,
                               success_level = 0,
-                              att_massive = FALSE) {
+                              att_massive = FALSE,
+                              att_versatile = FALSE) {
   dmg_red <- pmax(0, damage_reduction - att_penetration)
   
   success <- ifelse(att_massive, success_level * 2, success_level)
+  flat_mod <- ifelse(att_versatile, flat_mod + 3, flat_mod)
   
   dt <-
     data.table(damage = combinations,
@@ -141,13 +143,15 @@ create_dmgred_table <- function(combinations,
                                 att_penetration = 0,
                                 success_level = 0,
                                 att_massive = FALSE,
+                                att_versatile = FALSE,
                                 lower_bound = 0,
                                 upper_bound = 10) {
-  # browser()
+
   damage_reduction <- seq.int(lower_bound, upper_bound)
   dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
   
   success <- ifelse(att_massive, success_level * 2, success_level)
+  flat_mod <- ifelse(att_versatile, flat_mod + 3, flat_mod)
   
   probs <-
     data.table(
@@ -161,7 +165,6 @@ create_dmgred_table <- function(combinations,
       pmax(0, probs[, damage] - x)
     })
   means <- as.vector(probs[, probability] %*% means)
-  # damage = pmax(0, seq.int(0, length(prob_vec) - 1) + flat_mod - damage_reduction)
   
   dmgred_table <-
     data.table(
@@ -171,4 +174,42 @@ create_dmgred_table <- function(combinations,
     )
   
   return(dmgred_table)
+}
+
+create_slvls_table <- function(combinations,
+                              flat_mod = 0,
+                              weapon_speed = 1,
+                              damage_reduction = 0,
+                              att_penetration = 0,
+                              att_massive = FALSE,
+                              att_versatile = FALSE,
+                              lower_bound = 0,
+                              upper_bound = 10) {
+
+  success_lvls <- seq.int(lower_bound, upper_bound)
+  dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
+  
+  flat_mod <- ifelse(att_versatile, flat_mod + 3, flat_mod)
+  
+  probs <-
+    data.table(
+      damage = pmax(0, combinations + flat_mod - dmgred_pen_diff),
+      probability = 1 / length(combinations)
+    )
+  probs <- probs[, lapply(.SD, sum), by = damage]
+  
+  means <-
+    sapply(success_lvls, function(x) {
+      pmax(0, probs[, damage] + ifelse(att_massive, x * 2, x))
+    })
+  means <- as.vector(probs[, probability] %*% means)
+
+  slvls_table <-
+    data.table(
+      success_lvls = success_lvls,
+      means = means,
+      means_per_tick = means / weapon_speed
+    )
+  
+  return(slvls_table)
 }
