@@ -153,7 +153,7 @@ trigger = "hover"
             ),
 radioGroupButtons(
   inputId = "wield",
-  choices = c("Einhändig" = FALSE, "Zweihändig" = TRUE),
+  choices = c("Einh&#228ndig" = FALSE, "Zweih&#228ndig" = TRUE),
   status = "primary"
 )
 
@@ -291,7 +291,7 @@ conditionalPanel(
       ),
       radioGroupButtons(
         inputId = "wield_2",
-        choices = c("Einhändig" = FALSE, "Zweihändig" = TRUE),
+        choices = c("Einh&#228ndig" = FALSE, "Zweih&#228ndig" = TRUE),
         status = "primary"
       )
     )
@@ -373,7 +373,7 @@ mainPanel(tabsetPanel(
       "y_axis",
       "Darstellung der kumulierten Grafik",
       choices = list(
-        "mindestens x oder höher" = "cum_prob_min",
+        "mindestens x oder h&#246her" = "cum_prob_min",
         "maximal x oder niedriger" = "cum_prob_max"
       )
     ),
