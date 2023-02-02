@@ -1,5 +1,5 @@
 library(shiny)
-library(shinythemes)
+library(bslib)
 library(shinydashboard)
 library(shinyWidgets)
 library(shinyjs)
@@ -13,7 +13,7 @@ options(encoding = "UTF-8")
 # Frontend ----
 
 ui <- fluidPage(
-  theme = "flatly",
+  theme = bs_theme(bootswatch = "flatly"),
   useShinyjs(),
   tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
   
@@ -31,7 +31,8 @@ ui <- fluidPage(
             "Waffe auswählen:",
             choices = data[, name],
             multiple = TRUE,
-            options = pickerOptions(maxOptions = 1)
+            options = pickerOptions(maxOptions = 1),
+            width = "100%"
           ),
           column(4,
                  numericInput(
