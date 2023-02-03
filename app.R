@@ -171,7 +171,8 @@ conditionalPanel(
       "Waffe auswählen:",
       choices = data[, name],
       multiple = TRUE,
-      options = pickerOptions(maxOptions = 1)
+      options = pickerOptions(maxOptions = 1),
+      width = "100%"
     ),
     column(4,
            numericInput(
@@ -368,24 +369,24 @@ mainPanel(tabsetPanel(
   tabPanel(
     "Wahrscheinlichkeiten",
     value = 1,
-    plotOutput("dist_plot", height = "320px"),
+    plotOutput("dist_plot", height = "340px"),
     br(),
     selectInput(
       "y_axis",
       "Darstellung der kumulierten Grafik",
       choices = list(
-        "mindestens x oder h&#246her" = "cum_prob_min",
+        "mindestens x oder h\U00F6her" = "cum_prob_min",
         "maximal x oder niedriger" = "cum_prob_max"
       )
     ),
-    plotOutput("cum_dist_plot", height = "320px")
+    plotOutput("cum_dist_plot", height = "340px")
   ),
   tabPanel(
     "Schadensreduktion",
     value = 2,
-    plotOutput("dmgred_plot", height = "320px"),
+    plotOutput("dmgred_plot", height = "330px"),
     br(),
-    plotOutput("slvls_plot", height = "320px"),
+    plotOutput("slvls_plot", height = "330px"),
     selectInput(
       "y_axis_dr",
       "Art des durchschnittlichen Schadens",
@@ -603,9 +604,12 @@ server <- function(input, output, session) {
         position = position_dodge2(preserve = "single")
       ) +
       scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
-      geom_text(aes(label = round(probability * 100, 1)),
-                vjust = -0.3,
-                position = position_dodge(width = 0.9)) + # FIXME In DT
+      geom_text(
+        aes(label = round(probability * 100, 1)),
+        vjust = -0.3,
+        position = position_dodge(width = 0.9),
+        fontface = 2
+      ) + # FIXME In DT
       ggtitle("Wahrscheinlichkeitsverteilung des Schadens") +
       xlab("Schaden") +
       ylab("Wahrscheinlichkeit in %") +
@@ -638,14 +642,16 @@ server <- function(input, output, session) {
         position = position_dodge2(preserve = "single")
       ) +
       scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
-      geom_text(aes(label = switch(
-        input$y_axis,
-        cum_prob_min = round(cum_prob_min * 100, 1),
-        # FIXME In DT
-        cum_prob_max = round(cum_prob_max * 100, 1) # FIXME In DT
-      )),
-      vjust = -0.3,
-      position = position_dodge(width = 0.9)) +
+      geom_text(
+        aes(label = switch(
+          input$y_axis,
+          cum_prob_min = round(cum_prob_min * 100, 1),
+          # FIXME In DT
+          cum_prob_max = round(cum_prob_max * 100, 1) # FIXME In DT
+        ), fontface = 2),
+        vjust = -0.3,
+        position = position_dodge(width = 0.9)
+      ) +
       ggtitle(switch(
         input$y_axis,
         cum_prob_min = "Kumulierte Wahrscheinlichkeiten (Mindestschaden)",
@@ -795,14 +801,16 @@ server <- function(input, output, session) {
         position = position_dodge2(preserve = "single")
       ) +
       scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
-      geom_text(aes(label = switch(
-        input$y_axis_dr,
-        total = round(means, 1),
-        # FIXME In DT
-        norm = round(means_per_tick, 1)
-      )),
-      vjust = -0.3,
-      position = position_dodge(width = 0.9)) + # FIXME In DT
+      geom_text(
+        aes(label = switch(
+          input$y_axis_dr,
+          total = round(means, 1),
+          # FIXME In DT
+          norm = round(means_per_tick, 1)
+        ), fontface = 2),
+        vjust = -0.3,
+        position = position_dodge(width = 0.9)
+      ) + # FIXME In DT
       ggtitle("Durchschn. Schaden nach Schadensreduktion des Gegners") +
       xlab("Schadensreduktion") +
       ylab(switch(input$y_axis_dr,
@@ -833,14 +841,16 @@ server <- function(input, output, session) {
         position = position_dodge2(preserve = "single")
       ) +
       scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
-      geom_text(aes(label = switch(
-        input$y_axis_dr,
-        total = round(means, 1),
-        # FIXME In DT
-        norm = round(means_per_tick, 1)
-      )),
-      vjust = -0.3,
-      position = position_dodge(width = 0.9)) + # FIXME In DT
+      geom_text(
+        aes(label = switch(
+          input$y_axis_dr,
+          total = round(means, 1),
+          # FIXME In DT
+          norm = round(means_per_tick, 1)
+        ), fontface = 2),
+        vjust = -0.3,
+        position = position_dodge(width = 0.9)
+      ) + # FIXME In DT
       ggtitle("Durchschn. Schaden nach für 'Wuchtangriff' eingesetzten EG") +
       xlab("Für Wuchtangriff eingesetzte EG") +
       ylab(switch(input$y_axis_dr,
