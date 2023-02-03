@@ -8,7 +8,8 @@ library(ggplot2)
 library(scales)
 
 source("damage_calculation.R")
-options(encoding = "latin1")
+options(encoding = "UTF-8")
+Sys.setlocale(locale = "German")
 
 # Frontend ----
 
@@ -608,7 +609,7 @@ server <- function(input, output, session) {
         aes(label = round(probability * 100, 1)),
         vjust = -0.3,
         position = position_dodge(width = 0.9),
-        fontface = 3
+        fontface = 2
       ) + # FIXME In DT
       ggtitle("Wahrscheinlichkeitsverteilung des Schadens") +
       xlab("Schaden") +
