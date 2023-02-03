@@ -608,7 +608,7 @@ server <- function(input, output, session) {
         aes(label = round(probability * 100, 1)),
         vjust = -0.3,
         position = position_dodge(width = 0.9),
-        fontface = 2
+        fontface = 3
       ) + # FIXME In DT
       ggtitle("Wahrscheinlichkeitsverteilung des Schadens") +
       xlab("Schaden") +
