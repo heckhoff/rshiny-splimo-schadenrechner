@@ -375,7 +375,7 @@ mainPanel(tabsetPanel(
       "y_axis",
       "Darstellung der kumulierten Grafik",
       choices = list(
-        enc2utf8("mindestens x oder h\U00F6her") = "cum_prob_min",
+        "mindestens x oder h\U00F6her" = "cum_prob_min",
         "maximal x oder niedriger" = "cum_prob_max"
       )
     ),
