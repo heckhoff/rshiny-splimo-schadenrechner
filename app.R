@@ -8,7 +8,7 @@ library(ggplot2)
 library(scales)
 
 source("damage_calculation.R")
-options(encoding = "UTF-8")
+options(encoding = "latin1")
 
 # Frontend ----
 
