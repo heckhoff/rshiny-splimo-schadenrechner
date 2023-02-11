@@ -56,7 +56,7 @@ options(scipen = 999)
 
 # Import data ----
 
-data <- read.xlsx("waffenliste_mondstahlklingen.xlsx", sheet = 1)
+data <- read.xlsx("data/waffenliste_mondstahlklingen.xlsx", sheet = 1)
 setDT(data)
 
 # Dice Calculations ----

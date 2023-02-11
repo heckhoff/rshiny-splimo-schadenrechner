@@ -590,6 +590,7 @@ server <- function(input, output, session) {
   
   ## Plots ----
   # Plot Probability Distribution
+  # TODO Optimize
   output$dist_plot <- renderPlot({
     x <- tryCatch(
       prob_tables(),
