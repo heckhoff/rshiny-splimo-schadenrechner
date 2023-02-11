@@ -3,10 +3,14 @@ library(openxlsx)
 library(rex)
 library(stringr)
 
+options(encoding = "UTF-8")
+
 # Import ----
 
+# msk <-
+#   setDT(read.xlsx("raw_waffenliste_mondstahlklingen.xlsx", sheet = 1))
 msk <-
-  setDT(read.xlsx("raw_waffenliste_mondstahlklingen.xlsx", sheet = 1))
+  setDT(read.xlsx("raw_waffenliste_grundregelwerk.xlsx", sheet = 1))
 msk[, id := .I]
 setcolorder(msk, neworder = "id")
 
@@ -129,4 +133,5 @@ setorderv(msk, cols = "name")
 col_vec <- c(20, 23, 26, 27, 28, 29, 31, 32, 33, 34, 35, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48)
 msk[, (col_vec)] <- msk[, lapply(.SD, as.logical), .SDcols = (col_vec)]
 
-write.xlsx(msk, "waffenliste_mondstahlklingen.xlsx")
+# write.xlsx(msk, "waffenliste_mondstahlklingen.xlsx")
+write.xlsx(msk, "waffenliste_grundregelwerk.xlsx")

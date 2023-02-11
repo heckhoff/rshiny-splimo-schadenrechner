@@ -88,7 +88,11 @@ combine_dice <- function(n_d6 = 0,
   
   combinations <-
     sort(apply(expand.grid(seqs), 1, function(x)
-      sum(sort(x, decreasing = TRUE)[1:n_dice]))) # FIXME sort only if necessary
+      sum(x[order(x, decreasing = TRUE)[seq_len(n_dice)]]))) # FIXME sort only if necessary
+  
+  # TODO Does simplyfing it like this change anything?
+  # apply(expand.grid(seqs), 1, sum)
+  # TODO Answer: Yes - doesn't take only highest dice when exact
   
   return(combinations)
 }
@@ -146,7 +150,6 @@ create_dmgred_table <- function(combinations,
                                 att_versatile = FALSE,
                                 lower_bound = 0,
                                 upper_bound = 10) {
-
   damage_reduction <- seq.int(lower_bound, upper_bound)
   dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
   
@@ -177,15 +180,14 @@ create_dmgred_table <- function(combinations,
 }
 
 create_slvls_table <- function(combinations,
-                              flat_mod = 0,
-                              weapon_speed = 1,
-                              damage_reduction = 0,
-                              att_penetration = 0,
-                              att_massive = FALSE,
-                              att_versatile = FALSE,
-                              lower_bound = 0,
-                              upper_bound = 10) {
-
+                               flat_mod = 0,
+                               weapon_speed = 1,
+                               damage_reduction = 0,
+                               att_penetration = 0,
+                               att_massive = FALSE,
+                               att_versatile = FALSE,
+                               lower_bound = 0,
+                               upper_bound = 10) {
   success_lvls <- seq.int(lower_bound, upper_bound)
   dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
   
@@ -203,7 +205,7 @@ create_slvls_table <- function(combinations,
       pmax(0, probs[, damage] + ifelse(att_massive, x * 2, x))
     })
   means <- as.vector(probs[, probability] %*% means)
-
+  
   slvls_table <-
     data.table(
       success_lvls = success_lvls,
