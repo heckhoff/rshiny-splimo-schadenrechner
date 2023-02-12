@@ -11,7 +11,7 @@ library(stringi)
 source("damage_calculation.R")
 options(encoding = "UTF-8")
 
-# Predefine y-axis plot choices (necessary due to special symbols in named list)
+# Predefine y-axis plot choices (necessary due to special symbol in named list)
 y_axis_choice <- setNames(
   list(
     "cum_prob_min",
@@ -128,13 +128,13 @@ ui <- fluidPage(
           actionButton(
             "properties_toggle",
             "Waffenmerkmale",
-            icon = icon("plus"),
+            icon = icon("minus"),
             width = "46%",
             style = "font-size:125%;"
           )
         )),
         conditionalPanel(
-          condition = "input.properties_toggle % 2 == 1",
+          condition = "input.properties_toggle % 2 == 0",
           fluidRow(
             column(
               6,
@@ -313,13 +313,13 @@ Schaden um 3 Punkte.",
           actionButton(
             "properties_toggle_2",
             "Waffenmerkmale",
-            icon = icon("plus"),
+            icon = icon("minus"),
             width = "46%",
             style = "font-size:125%;"
           )
         )),
         conditionalPanel(
-          condition = "input.properties_toggle_2 % 2 == 1",
+          condition = "input.properties_toggle_2 % 2 == 0",
           fluidRow(
             column(
               6,
@@ -572,10 +572,21 @@ server <- function(input, output, session) {
     updateActionButton(session,
       "properties_toggle",
       icon = if ((input$properties_toggle %% 2) == 0) {
-        icon("plus")
-      } else {
         icon("minus")
+      } else {
+        icon("plus")
       }
+    )
+  })
+  
+  observeEvent(input$properties_toggle_2, {
+    updateActionButton(session,
+                       "properties_toggle_2",
+                       icon = if ((input$properties_toggle_2 %% 2) == 0) {
+                         icon("minus")
+                       } else {
+                         icon("plus")
+                       }
     )
   })
 
@@ -689,12 +700,12 @@ server <- function(input, output, session) {
   
   print_weapon_txt_2 <-
     reactive(
-      HTML(
-        "<b><FONT COLOR='D55E00'>Ausgewählte Waffe: </FONT COLOR></b>",
+      paste0(
+        "<b><FONT COLOR='D55E00'>Ausgew&auml;hlte Waffe: </FONT COLOR></b>",
         create_weapon_txt(input$d6_2, input$d10_2, input$flat_2)
       )
     )
-  output$weapon_2 <- renderUI({
+  output$weapon_2 <- renderText({
     print_weapon_txt_2()
   })
 
