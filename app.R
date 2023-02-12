@@ -1,45 +1,82 @@
 library(shiny)
 library(bslib)
-# library(shinydashboard)
+library(shinydashboard)
 library(shinyWidgets)
 library(shinyjs)
 library(shinyBS)
 library(ggplot2)
 library(scales)
+library(stringi)
 
 source("damage_calculation.R")
 options(encoding = "UTF-8")
 
+# Predefine y-axis plot choices (necessary due to special symbols in named list)
+y_axis_choice <- setNames(list("cum_prob_min",
+                               "cum_prob_max"),
+                          c(
+                            paste0(
+                              "mindestens x oder h",
+                              stringi::stri_unescape_unicode("\U00F6"),
+                              "her"
+                            ),
+                            "maximal x oder niedriger"
+                          ))
+
 # Frontend ----
 
 ui <- fluidPage(
-  theme = bs_theme(bootswatch = "flatly"),
+  # theme = bs_theme(bootswatch = "flatly"),
   useShinyjs(),
   tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
-  
   titlePanel("Splittermond Waffenschadenrechner"),
   
   ## Side-Panel ----
   sidebarLayout(
     sidebarPanel(
+      shinyWidgets::setSliderColor(
+        c(
+          "#56B4E9",
+                   "#56B4E9",
+                   "#56B4E9",
+                   "#56B4E9",
+                   "#D55E00",
+                   "#D55E00",
+                   "#D55E00",
+                   "#D55E00",
+                   "black",
+                   "black"
+        ),
+        c(1:10)
+      ),
       id = "side-panel",
       conditionalPanel(
-        condition = "input.weapon_toggle%2 == 0",
-        fluidRow(
+        condition = "input.weapon_toggle % 2 == 0",
+        fluidRow(column(
+          10,
           pickerInput(
             "select_weapon_1",
-            "Waffe auswählen:",
             choices = data[, name],
             multiple = TRUE,
-            options = pickerOptions(maxOptions = 1),
+            options = pickerOptions(
+              maxOptions = 1,
+              liveSearch = TRUE,
+              noneSelectedText = "Waffenpreset laden"
+            ),
             width = "100%"
-          ),
+          )
+        ),
+        column(
+          2, actionButton("reset_input", "", icon = icon("xmark"))
+        ),
+        align = "right"),
+        fluidRow(
           column(4,
                  numericInput(
                    "d6",
                    "Anzahl W6",
                    min = 0,
-                   max = 8,
+                   max = 6,
                    value = 0
                  )),
           column(4,
@@ -55,125 +92,160 @@ ui <- fluidPage(
                               "Modifikator",
                               value = 0))
         ),
-        
-        numericInput(
-          "speed",
-          "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
-          min = 1,
-          value = 1
-        ),
+        fluidRow(column(
+          12,
+          numericInput(
+            "speed",
+            "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
+            min = 1,
+            value = 1
+          )
+        )),
         
         ## Textoutput ----
-        br(),
-        textOutput("weapon"),
-        # br(),
-        textOutput("mean_dmg"),
-        # br(),
-        textOutput("mean_dmg_per_tick"),
-        # br(),
-        textOutput("sd_dmg"),
+        htmlOutput("weapon"),
+        htmlOutput("mean_dmg"),
+        htmlOutput("mean_dmg_per_tick"),
+        htmlOutput("sd_dmg"),
         br(),
         
         ## Waffenmerkmale ----
-        h4("Waffenmerkmale:"),
-        fluidRow(
-          column(
-            6,
-            sliderInput(
-              "exact",
-              "Exakt",
-              min = 0,
-              max = 3,
-              value = 0
+        fluidRow(column(
+          12,
+          actionButton(
+            "properties_toggle",
+            "Waffenmerkmale",
+            icon = icon("plus"),
+            width = "46%",
+            style = "font-size:125%;"
+          )
+        )),
+        conditionalPanel(
+          condition = "input.properties_toggle % 2 == 1",
+          fluidRow(
+            column(
+              6,
+              sliderInput(
+                "exact",
+                "Exakt",
+                min = 0,
+                max = 3,
+                value = 0
+              ),
+              bsTooltip(
+                id = "exact",
+                title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnisse zählen für den Schadenswurf.",
+                trigger = "hover"
+              )
             ),
-            bsTooltip(
-              id = "exact",
-              title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnisse zählen für den Schadenswurf.",
-              trigger = "hover"
+            column(
+              6,
+              sliderInput(
+                "penetration",
+                "Durchdringung",
+                min = 0,
+                max = 6,
+                value = 0
+              ),
+              bsTooltip(
+                id = "penetration",
+                title = "Für jede Stufe dieses Merkmals kann 1 Punkt der gegnerischen Schadensreduktion ignoriert werden, egal aus welcher Quelle diese stammt.",
+                trigger = "hover"
+              )
             ),
-            sliderInput(
-              "critical",
-              "Kritisch",
-              min = 0,
-              max = 5,
-              value = 0
+            style = "padding-top:10px"
+          ),
+          fluidRow(
+            column(
+              6,
+              sliderInput(
+                "critical",
+                "Kritisch",
+                min = 0,
+                max = 5,
+                value = 0
+              ),
+              bsTooltip(
+                id = "critical",
+                title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
+                trigger = "hover"
+              )
             ),
-            bsTooltip(
-              id = "critical",
-              title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
-              trigger = "hover"
-            ),
-            materialSwitch("massive",
-                           "Wuchtig",
-                           value = FALSE,
-                           status = "primary"),
-            bsTooltip(
-              id = "massive",
-              title = "Bei Waffen mit diesem Merkmal verursacht das freie Manöver Wuchtangriff 2 statt 1 zusätzlichen Punkt Schaden pro eingesetzten Erfolgsgrad.",
-              trigger = "hover"
+            column(
+              6,
+              sliderInput(
+                "sharp",
+                "Scharf",
+                min = 0,
+                max = 5,
+                value = 0
+              ),
+              bsTooltip(
+                id = "sharp",
+                title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
+                trigger = "hover"
+              )
             )
           ),
-          column(
-            6,
-            sliderInput(
-              "penetration",
-              "Durchdringung",
-              min = 0,
-              max = 6,
-              value = 0
+          fluidRow(
+            column(
+              6,
+              materialSwitch("massive",
+                             "Wuchtig",
+                             value = FALSE,
+                             status = "primary"),
+              bsTooltip(
+                id = "massive",
+                title = "Bei Waffen mit diesem Merkmal verursacht das freie Manöver Wuchtangriff 2 statt 1 zusätzlichen Punkt Schaden pro eingesetzten Erfolgsgrad.",
+                trigger = "hover"
+              )
             ),
-            bsTooltip(
-              id = "penetration",
-              title = "Für jede Stufe dieses Merkmals kann 1 Punkt der gegnerischen Schadensreduktion ignoriert werden, egal aus welcher Quelle diese stammt.",
-              trigger = "hover"
-            ),
-            sliderInput(
-              "sharp",
-              "Scharf",
-              min = 0,
-              max = 5,
-              value = 0
-            ),
-            bsTooltip(
-              id = "sharp",
-              title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
-              trigger = "hover"
-            ),
-            materialSwitch(
-              "versatile",
-              "Vielseitig",
-              value = FALSE,
-              status = "primary"
-            ),
-            bsTooltip(
-              # FIXME
-              id = "wield",
-              title = "Bei vielseitigen Waffen kann zwischen einhändiger und zweihändiger Führung gewechselt werden. In zweihändiger Führung erhöht sich ihr
+            column(
+              6,
+              materialSwitch(
+                "versatile",
+                "Vielseitig",
+                value = FALSE,
+                status = "primary"
+              ),
+              bsTooltip(
+                # FIXME
+                id = "wield",
+                title = "Bei vielseitigen Waffen kann zwischen einhändiger und zweihändiger Führung gewechselt werden. In zweihändiger Führung erhöht sich ihr
 Schaden um 3 Punkte.",
 trigger = "hover"
-            ),
+              ),
 radioGroupButtons(
   inputId = "wield",
   choices = c("Einh&#228ndig" = FALSE, "Zweih&#228ndig" = TRUE),
   status = "primary"
 )
-
-
+            )
           )
         ),
-br(),
+br()
       ),
 conditionalPanel(
-  condition = "input.weapon_toggle%2  == 1",
-  fluidRow(
+  condition = "input.weapon_toggle % 2 == 1",
+  fluidRow(column(
+    10,
     pickerInput(
       "select_weapon_2",
-      "Waffe auswählen:",
       choices = data[, name],
       multiple = TRUE,
-      options = pickerOptions(maxOptions = 1),
+      options = pickerOptions(
+        maxOptions = 1,
+        liveSearch = TRUE,
+        noneSelectedText = "Waffenpreset laden"
+      ),
       width = "100%"
-    ),
+    )
+  ),
+  column(
+    2, actionButton("reset_input_2", "", icon = icon("xmark"))
+  ),
+  align = "right"),
+  fluidRow(
     column(4,
            numericInput(
              "d6_2",
@@ -195,137 +267,190 @@ conditionalPanel(
                         "Modifikator",
                         value = 0))
   ),
-  
-  numericInput(
-    "speed_2",
-    "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
-    min = 1,
-    value = 1
-  ),
+  fluidRow(column(
+    12,
+    numericInput(
+      "speed_2",
+      "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
+      min = 1,
+      value = 1
+    )
+  )),
   
   ## Textoutput ----
-  br(),
-  textOutput("weapon_2"),
-  # br(),
-  textOutput("mean_dmg_2"),
-  # br(),
-  textOutput("mean_dmg_per_tick_2"),
-  # br(),
-  textOutput("sd_dmg_2"),
+  htmlOutput("weapon_2"),
+  htmlOutput("mean_dmg_2"),
+  htmlOutput("mean_dmg_per_tick_2"),
+  htmlOutput("sd_dmg_2"),
   br(),
   
   ## Waffenmerkmale ----
-  h4("Waffenmerkmale:"),
-  fluidRow(
-    column(
-      6,
-      sliderInput(
-        "exact_2",
-        "Exakt",
-        min = 0,
-        max = 3,
-        value = 0
+  fluidRow(column(
+    12,
+    actionButton(
+      "properties_toggle_2",
+      "Waffenmerkmale",
+      icon = icon("plus"),
+      width = "46%",
+      style = "font-size:125%;"
+    )
+  )),
+  conditionalPanel(
+    condition = "input.properties_toggle_2 % 2 == 1",
+    fluidRow(
+      column(
+        6,
+        sliderInput(
+          "exact_2",
+          "Exakt",
+          min = 0,
+          max = 3,
+          value = 0
+        ),
+        bsTooltip(
+          id = "exact_2",
+          title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnisse zählen für den Schadenswurf.",
+          trigger = "hover"
+        )
       ),
-      bsTooltip(
-        id = "exact_2",
-        title = "Bei einem Schadenswurf mit dieser Waffe werden so viele Würfel zusätzlich geworfen, wie die Stufe des Merkmals beträgt. Die höchsten Ergebnisse zählen für den Schadenswurf.",
-        trigger = "hover"
+      column(
+        6,
+        sliderInput(
+          "penetration_2",
+          "Durchdringung",
+          min = 0,
+          max = 6,
+          value = 0
+        ),
+        bsTooltip(
+          id = "penetration_2",
+          title = "Für jede Stufe dieses Merkmals kann 1 Punkt der gegnerischen Schadensreduktion ignoriert werden, egal aus welcher Quelle diese stammt.",
+          trigger = "hover"
+        )
       ),
-      sliderInput(
-        "critical_2",
-        "Kritisch",
-        min = 0,
-        max = 5,
-        value = 0
+      style = "padding-top:10px"
+    ),
+    fluidRow(
+      column(
+        6,
+        sliderInput(
+          "critical_2",
+          "Kritisch",
+          min = 0,
+          max = 5,
+          value = 0
+        ),
+        bsTooltip(
+          id = "critical_2",
+          title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
+          trigger = "hover"
+        )
       ),
-      bsTooltip(
-        id = "critical_2",
-        title = "Der Schaden eines Angriffs einer Waffe mit diesem Merkmal erhöht sich für jeden Schadenswürfel, der die maximale Augenzahl würfelt, um die Stufe des Merkmals.",
-        trigger = "hover"
-      ),
-      materialSwitch("massive_2",
-                     "Wuchtig",
-                     value = FALSE,
-                     status = "danger"),
-      bsTooltip(
-        id = "massive_2",
-        title = "Bei Waffen mit diesem Merkmal verursacht das freie Manöver Wuchtangriff 2 statt 1 zusätzlichen Punkt Schaden pro eingesetzten Erfolgsgrad.",
-        trigger = "hover"
+      column(
+        6,
+        sliderInput(
+          "sharp_2",
+          "Scharf",
+          min = 0,
+          max = 5,
+          value = 0
+        ),
+        bsTooltip(
+          id = "sharp_2",
+          title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
+          trigger = "hover"
+        )
       )
     ),
-    column(
-      6,
-      sliderInput(
-        "penetration_2",
-        "Durchdringung",
-        min = 0,
-        max = 6,
-        value = 0
+    fluidRow(
+      column(
+        6,
+        materialSwitch("massive_2",
+                       "Wuchtig",
+                       value = FALSE,
+                       status = "primary"),
+        bsTooltip(
+          id = "massive_2",
+          title = "Bei Waffen mit diesem Merkmal verursacht das freie Manöver Wuchtangriff 2 statt 1 zusätzlichen Punkt Schaden pro eingesetzten Erfolgsgrad.",
+          trigger = "hover"
+        )
       ),
-      bsTooltip(
-        id = "penetration_2",
-        title = "Für jede Stufe dieses Merkmals kann 1 Punkt der gegnerischen Schadensreduktion ignoriert werden, egal aus welcher Quelle diese stammt.",
-        trigger = "hover"
-      ),
-      sliderInput(
-        "sharp_2",
-        "Scharf",
-        min = 0,
-        max = 5,
-        value = 0
-      ),
-      bsTooltip(
-        id = "sharp_2",
-        title = "Alle Schadenswürfel einer Waffe mit diesem Merkmal werden immer als mindestens der Wert der Stufe des Merkmals gewertet, egal was eigentlich gewürfelt wurde.",
-        trigger = "hover"
-      ),
-      materialSwitch(
-        "versatile_2",
-        "Vielseitig",
-        value = FALSE,
-        status = "danger"
-      ),
-      bsTooltip(
-        # FIXME
-        id = "wield_2",
-        title = "Bei vielseitigen Waffen kann zwischen einhändiger und zweihändiger Führung gewechselt werden. In zweihändiger Führung erhöht sich ihr Schaden um 3 Punkte.",
-        trigger = "hover"
-      ),
-      radioGroupButtons(
-        inputId = "wield_2",
-        choices = c("Einh&#228ndig" = FALSE, "Zweih&#228ndig" = TRUE),
-        status = "primary"
+      column(
+        6,
+        materialSwitch(
+          "versatile_2",
+          "Vielseitig",
+          value = FALSE,
+          status = "primary"
+        ),
+        bsTooltip(
+          # FIXME
+          id = "wield_2",
+          title = "Bei vielseitigen Waffen kann zwischen einhändiger und zweihändiger Führung gewechselt werden. In zweihändiger Führung erhöht sich ihr
+Schaden um 3 Punkte.",
+trigger = "hover"
+        ),
+radioGroupButtons(
+  inputId = "wield_2",
+  choices = c("Einh&#228ndig" = FALSE, "Zweih&#228ndig" = TRUE),
+  status = "primary"
+)
       )
     )
   ),
-  br()
+br()
 ),
-actionButton("weapon_toggle", "➕ Weitere Waffe hinzufügen"),
-br(),
-
+fluidRow(
+  column(
+    6,
+    actionButton(
+      "modifiers_toggle",
+      "Weitere Parameter",
+      icon = icon("plus"),
+      width = "100%",
+      style = "font-size:125%;"
+    )
+  ),
+  column(
+    6,
+    actionButton(
+      "weapon_toggle",
+      "Weitere Waffe",
+      icon = icon("plus"),
+      style = "font-size:125%;"
+    ),
+    align = "right"
+  )
+),
 # Schadensreduktion ----
 conditionalPanel(
-  condition = "input.tab_selected == 1",
-  h4("Weitere Parameter:"),
-  sliderInput(
-    "dmg_reduction",
-    "Simulierte Schadensreduktion",
-    min = 0,
-    max = 10,
-    value = 0
-  ),
+  condition = "input.tab_selected == 1 & input.modifiers_toggle % 2 == 1",
+  br(),
+  fluidRow(column(
+    12,
+    sliderInput(
+      "dmg_reduction",
+      "Simulierte Schadensreduktion",
+      min = 0,
+      max = 10,
+      value = 0
+    )
+  )),
   bsTooltip(
     id = "dmg_reduction",
     title = "Die Schadensreduktion einer Rüstung wird von dem Schaden jedes erfolgreichen Angriffs gegen den Träger abgezogen.",
     trigger = "hover"
   ),
-  sliderInput(
-    "success_lvl",
-    "Für Wuchtangriff genutzte Erfolgsgrade",
-    min = 0,
-    max = 10,
-    value = 0
-  ),
+  fluidRow(column(
+    12,
+    sliderInput(
+      "success_lvl",
+      "Für Wuchtangriff genutzte Erfolgsgrade",
+      min = 0,
+      max = 10,
+      value = 0
+    )
+  )),
   bsTooltip(
     id = "success_lvl",
     title = "Für jeden aufgewendeten Erfolgsgrad richtet der Angriff einen zusätzlichen Punkt Schaden an.",
@@ -334,9 +459,10 @@ conditionalPanel(
 ),
 
 conditionalPanel(
-  condition = "input.tab_selected == 2",
+  condition = "input.tab_selected == 2  & input.modifiers_toggle % 2 == 1",
+  br(),
   h4("Grenzen der Schadensreduktion/Erfolgsgrade:"),
-  column(
+  fluidRow(column(
     6,
     numericInput(
       "lower_bound",
@@ -355,11 +481,11 @@ conditionalPanel(
       max = 25,
       value = 10
     )
-  )
+  ))
 ),
 
 br(),
-actionButton("reset_input", "Eingabe zurücksetzen"),
+width = 3
     ),
 
 
@@ -371,14 +497,9 @@ mainPanel(tabsetPanel(
     value = 1,
     plotOutput("dist_plot", height = "340px"),
     br(),
-    selectInput(
-      "y_axis",
-      "Darstellung der kumulierten Grafik",
-      choices = list(
-        "mindestens x oder h\U00F6her" = "cum_prob_min",
-        "maximal x oder niedriger" = "cum_prob_max"
-      )
-    ),
+    selectInput("y_axis",
+                "Darstellung der kumulierten Grafik",
+                choices = y_axis_choice),
     plotOutput("cum_dist_plot", height = "340px")
   ),
   tabPanel(
@@ -398,27 +519,54 @@ mainPanel(tabsetPanel(
     )
   ),
   id = "tab_selected"
-))
+),
+width = 9)
   )
 )
 
 
 server <- function(input, output, session) {
+  # Hide objects
+  hide("weapon_toggle")
+  hide("wield")
+  hide("wield_2")
+  
   # Tab 1 ----
   
   ## Update elements ----
+  observeEvent(reactiveValuesToList(input), {
+    show("weapon_toggle")
+  }, ignoreInit = TRUE)
   
-  observeEvent(input$weapon_toggle, {
+  observeEvent(input$properties_toggle, {
     updateActionButton(session,
-                       "weapon_toggle",
-                       label = ifelse((input$weapon_toggle %% 2) == 0,
-                                      "Waffe 2 anpassen",
-                                      "Waffe 1 anpassen"
-                       ))
+                       "properties_toggle",
+                       icon = if ((input$properties_toggle %% 2) == 0)
+                         icon("plus")
+                       else
+                         icon("minus"))
   })
   
-  hide("wield")
-  hide("wield_2")
+  observeEvent(input$modifiers_toggle, {
+    updateActionButton(session,
+                       "modifiers_toggle",
+                       icon = if ((input$modifiers_toggle %% 2) == 0)
+                         icon("plus")
+                       else
+                         icon("minus"))
+  })
+  
+  observeEvent(input$weapon_toggle, {
+    updateActionButton(
+      session,
+      "weapon_toggle",
+      label = ifelse((input$weapon_toggle %% 2) == 0,
+                     "Waffe 2 anpassen",
+                     "Waffe 1 anpassen"
+      ),
+      icon = icon(NULL)
+    )
+  })
   
   ## Create objects ----
   
@@ -495,19 +643,27 @@ server <- function(input, output, session) {
   # FIXME Print like sd_damage (in one)
   # Print Selected Weapon
   print_weapon_txt <-
-    reactive(paste(
-      "Ausgewählte Waffe:",
-      create_weapon_txt(input$d6, input$d10, input$flat)
-    ))
+    reactive(
+      paste0(
+        "<b><FONT COLOR='#56B4E9'>Ausgew",
+        stringi::stri_unescape_unicode("\U00E4"),
+        "hlte Waffe: </FONT COLOR></b>",
+        create_weapon_txt(input$d6, input$d10, input$flat)
+      )
+    )
   output$weapon <- renderText({
     print_weapon_txt()
   })
   
   print_weapon_txt_2 <-
-    reactive(paste(
-      "Ausgewählte Waffe:",
-      create_weapon_txt(input$d6_2, input$d10_2, input$flat_2)
-    ))
+    reactive(
+      paste0(
+        "<b><FONT COLOR='D55E00'>Ausgew",
+        stringi::stri_unescape_unicode("\U00E4"),
+        "hlte Waffe: </FONT COLOR></b>",
+        create_weapon_txt(input$d6_2, input$d10_2, input$flat_2)
+      )
+    )
   output$weapon_2 <- renderText({
     print_weapon_txt_2()
   })
@@ -517,8 +673,12 @@ server <- function(input, output, session) {
     reactive(round(prob_table()[, sum(damage * probability)], 2))
   # Print Average Damage
   print_mean_damage <-
-    reactive(paste("Durchschn. Schaden:",
-                   mean_damage()))
+    reactive(
+      paste(
+        "<b><FONT COLOR='#56B4E9'>Durchschnittlicher Schaden:</FONT COLOR></b>",
+        mean_damage()
+      )
+    )
   output$mean_dmg <- renderText({
     print_mean_damage()
   })
@@ -527,63 +687,79 @@ server <- function(input, output, session) {
     reactive(round(prob_table_2()[, sum(damage * probability)], 2))
   # Print Average Damage
   print_mean_damage_2 <-
-    reactive(paste("Durchschn. Schaden:",
-                   mean_damage_2()))
+    reactive(
+      paste(
+        "<b><FONT COLOR='D55E00'>Durchschnittlicher Schaden:</FONT COLOR></b>",
+        mean_damage_2()
+      )
+    )
   output$mean_dmg_2 <- renderText({
     print_mean_damage_2()
   })
   
   # Print Average Damage per Tick
   print_mean_damage_per_tick <-
-    reactive(paste(
-      "Durchschn. Schaden pro Tick:",
-      fifelse(
-        input$speed != 0,
-        # FIXME
-        yes =
-          round(prob_table()[, sum(damage * probability)] / input$speed, 2),
-        no = 0
+    reactive(
+      paste(
+        "<b><FONT COLOR='#56B4E9'>Durchschn. Schaden pro Tick:</FONT COLOR></b>",
+        fifelse(
+          input$speed != 0,
+          # FIXME
+          yes =
+            round(prob_table()[, sum(damage * probability)] / input$speed, 2),
+          no = 0
+        )
       )
-    ))
+    )
   output$mean_dmg_per_tick <- renderText({
     print_mean_damage_per_tick()
   })
   
   print_mean_damage_per_tick_2 <-
-    reactive(paste(
-      "Durchschn. Schaden pro Tick:",
-      fifelse(
-        input$speed_2 != 0,
-        # FIXME
-        yes =
-          round(prob_table_2()[, sum(damage * probability)] / input$speed_2, 2),
-        no = 0
+    reactive(
+      paste(
+        "<b><FONT COLOR='D55E00'>Durchschn. Schaden pro Tick:</FONT COLOR></b>",
+        fifelse(
+          input$speed_2 != 0,
+          # FIXME
+          yes =
+            round(prob_table_2()[, sum(damage * probability)] / input$speed_2, 2),
+          no = 0
+        )
       )
-    ))
+    )
   output$mean_dmg_per_tick_2 <- renderText({
     print_mean_damage_per_tick_2()
   })
   
   # Print Damage Standard Deviation
   sd_damage <-
-    reactive(paste("Durchschnittliche Abweichung:",
-                   round(prob_table()
-                         [, sqrt(sum((damage - sum(
-                           damage * probability
-                         ))
-                         ^ 2 * probability))], 2)))
+    reactive(
+      paste(
+        "<b><FONT COLOR='#56B4E9'>Durchschnittliche Abweichung:</FONT COLOR></b>",
+        round(prob_table()
+              [, sqrt(sum((damage - sum(
+                damage * probability
+              ))
+              ^ 2 * probability))], 2)
+      )
+    )
   output$sd_dmg <- renderText({
     sd_damage()
   })
   
   
   sd_damage_2 <-
-    reactive(paste("Durchschnittliche Abweichung:",
-                   round(prob_table_2()
-                         [, sqrt(sum((damage - sum(
-                           damage * probability
-                         ))
-                         ^ 2 * probability))], 2)))
+    reactive(
+      paste(
+        "<b><FONT COLOR='D55E00'>Durchschnittliche Abweichung:</FONT COLOR></b>",
+        round(prob_table_2()
+              [, sqrt(sum((damage - sum(
+                damage * probability
+              ))
+              ^ 2 * probability))], 2)
+      )
+    )
   output$sd_dmg_2 <- renderText({
     sd_damage_2()
   })
@@ -807,7 +983,7 @@ server <- function(input, output, session) {
           input$y_axis_dr,
           total = round(means, 1),
           # FIXME In DT
-          norm = round(means_per_tick, 1)
+          norm = round(means_per_tick, 2)
         ), fontface = 2),
         vjust = -0.3,
         position = position_dodge(width = 0.9)
@@ -990,8 +1166,13 @@ server <- function(input, output, session) {
     reset("side-panel")
     reset("weapon_toggle") # FIXME Not working
   })
+  observeEvent(input$reset_input_2, {
+    reset("side-panel")
+    reset("weapon_toggle")  # FIXME Not working
+  })
   
 }
+
 
 # Run the application
 shinyApp(ui = ui, server = server)
