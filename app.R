@@ -679,26 +679,22 @@ server <- function(input, output, session) {
   print_weapon_txt <-
     reactive(
       paste0(
-        "<b><FONT COLOR='#56B4E9'>Ausgew",
-        stringi::stri_unescape_unicode("\U00E4"),
-        "hlte Waffe: </FONT COLOR></b>",
+        "<b><FONT COLOR='#56B4E9'>Ausgew&auml;hlte Waffe: </FONT COLOR></b>",
         create_weapon_txt(input$d6, input$d10, input$flat)
       )
     )
   output$weapon <- renderText({
     print_weapon_txt()
   })
-
+  
   print_weapon_txt_2 <-
     reactive(
-      paste0(
-        "<b><FONT COLOR='D55E00'>Ausgew",
-        stringi::stri_unescape_unicode("\U00E4"),
-        "hlte Waffe: </FONT COLOR></b>",
+      HTML(
+        "<b><FONT COLOR='D55E00'>Ausgewählte Waffe: </FONT COLOR></b>",
         create_weapon_txt(input$d6_2, input$d10_2, input$flat_2)
       )
     )
-  output$weapon_2 <- renderText({
+  output$weapon_2 <- renderUI({
     print_weapon_txt_2()
   })
 
