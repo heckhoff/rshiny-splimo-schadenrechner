@@ -73,27 +73,30 @@ combine_dice <- function(n_d6 = 0,
       seq <- c(seq.int(1, 5), 6 + att_critical)
       seq[seq %in% seq_len(att_sharp)] <- att_sharp
       rep(list(seq), n_d6 + att_exact)
-    } else
+    } else {
       0
-  
+    }
+
   seq_d10 <-
     if (n_d10 > 0) {
       seq <- c(seq.int(1, 9), 10 + att_critical)
       seq[seq %in% seq_len(att_sharp)] <- att_sharp
       rep(list(seq), n_d10 + att_exact)
-    } else
+    } else {
       0
-  
+    }
+
   seqs <- c(seq_d6, seq_d10)
-  
+
   combinations <-
-    sort(apply(expand.grid(seqs), 1, function(x)
-      sum(x[order(x, decreasing = TRUE)[seq_len(n_dice)]]))) # FIXME sort only if necessary
-  
+    sort(apply(expand.grid(seqs), 1, function(x) {
+      sum(x[order(x, decreasing = TRUE)[seq_len(n_dice)]])
+    })) # FIXME sort only if necessary
+
   # TODO Does simplyfing it like this change anything?
   # apply(expand.grid(seqs), 1, sum)
   # TODO Answer: Yes - doesn't take only highest dice when exact
-  
+
   return(combinations)
 }
 
@@ -127,13 +130,15 @@ create_prob_table <- function(combinations,
                               att_massive = FALSE,
                               att_versatile = FALSE) {
   dmg_red <- pmax(0, damage_reduction - att_penetration)
-  
+
   success <- ifelse(att_massive, success_level * 2, success_level)
   flat_mod <- ifelse(att_versatile, flat_mod + 3, flat_mod)
-  
+
   dt <-
-    data.table(damage = combinations,
-               probability = 1 / length(combinations))
+    data.table(
+      damage = combinations,
+      probability = 1 / length(combinations)
+    )
   dt[, damage := pmax(0, damage + flat_mod + success - dmg_red)]
   dt <- dt[, lapply(.SD, sum), by = damage]
   dt[, cum_prob_min := rev(cumsum(rev(probability)))]
@@ -152,30 +157,30 @@ create_dmgred_table <- function(combinations,
                                 upper_bound = 10) {
   damage_reduction <- seq.int(lower_bound, upper_bound)
   dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
-  
+
   success <- ifelse(att_massive, success_level * 2, success_level)
   flat_mod <- ifelse(att_versatile, flat_mod + 3, flat_mod)
-  
+
   probs <-
     data.table(
       damage = pmax(0, combinations + flat_mod + success),
       probability = 1 / length(combinations)
     )
   probs <- probs[, lapply(.SD, sum), by = damage]
-  
+
   means <-
     sapply(dmgred_pen_diff, function(x) {
       pmax(0, probs[, damage] - x)
     })
   means <- as.vector(probs[, probability] %*% means)
-  
+
   dmgred_table <-
     data.table(
       damage_reduction = damage_reduction,
       means = means,
       means_per_tick = means / weapon_speed
     )
-  
+
   return(dmgred_table)
 }
 
@@ -190,28 +195,28 @@ create_slvls_table <- function(combinations,
                                upper_bound = 10) {
   success_lvls <- seq.int(lower_bound, upper_bound)
   dmgred_pen_diff <- pmax(0, damage_reduction - att_penetration)
-  
+
   flat_mod <- ifelse(att_versatile, flat_mod + 3, flat_mod)
-  
+
   probs <-
     data.table(
       damage = pmax(0, combinations + flat_mod - dmgred_pen_diff),
       probability = 1 / length(combinations)
     )
   probs <- probs[, lapply(.SD, sum), by = damage]
-  
+
   means <-
     sapply(success_lvls, function(x) {
       pmax(0, probs[, damage] + ifelse(att_massive, x * 2, x))
     })
   means <- as.vector(probs[, probability] %*% means)
-  
+
   slvls_table <-
     data.table(
       success_lvls = success_lvls,
       means = means,
       means_per_tick = means / weapon_speed
     )
-  
+
   return(slvls_table)
 }

@@ -35,32 +35,46 @@ msk[vec_flat_neg, flat_mod := V1, on = "id"]
 msk[attributes != "–", n_attributes := str_count(attributes, ",") + 1]
 
 capture_stufe <- function(string) {
-  rex(paste(string, "("),
-      capture(except_any_of(")")),
-      ")")
+  rex(
+    paste(string, "("),
+    capture(except_any_of(")")),
+    ")"
+  )
 }
 
 msk[grepl("Ablenkend", attributes),
-    ablenkend := re_matches(attributes, capture_stufe("Ablenkend")), by = id]
+  ablenkend := re_matches(attributes, capture_stufe("Ablenkend")),
+  by = id
+]
 
 msk[grepl("Defensiv", attributes),
-    defensiv := re_matches(attributes, capture_stufe("Defensiv")), by = id]
+  defensiv := re_matches(attributes, capture_stufe("Defensiv")),
+  by = id
+]
 
 msk[grepl("Doppelwaffe", attributes), doppelwaffe := 1, by = id]
 
 msk[grepl("Durchdringung", attributes),
-    durchdringung := re_matches(attributes, capture_stufe("Durchdringung")), by = id]
+  durchdringung := re_matches(attributes, capture_stufe("Durchdringung")),
+  by = id
+]
 
 msk[grepl("Entwaffnend", attributes),
-    entwaffnend := re_matches(attributes, capture_stufe("Entwaffnend")), by = id]
+  entwaffnend := re_matches(attributes, capture_stufe("Entwaffnend")),
+  by = id
+]
 
 msk[grepl("Entwaffnungsimmunität", attributes), entwaffnungsimmunitaet := 1, by = id]
 
 msk[grepl("Entwaffnungsschutz", attributes),
-    entwaffnungsschutz := re_matches(attributes, capture_stufe("Entwaffnungsschutz")), by = id]
+  entwaffnungsschutz := re_matches(attributes, capture_stufe("Entwaffnungsschutz")),
+  by = id
+]
 
 msk[grepl("Exakt", attributes),
-    exakt := re_matches(attributes, capture_stufe("Exakt")), by = id]
+  exakt := re_matches(attributes, capture_stufe("Exakt")),
+  by = id
+]
 
 msk[grepl("Ferndistanz", attributes), ferndistanz := 1, by = id]
 
@@ -71,7 +85,9 @@ msk[grepl("Improvisiert", attributes), improvisiert := 1, by = id]
 msk[grepl("Kletterhilfe", attributes), kletterhilfe := 1, by = id]
 
 msk[grepl("Kritisch", attributes),
-    kritisch := re_matches(attributes, capture_stufe("Kritisch")), by = id]
+  kritisch := re_matches(attributes, capture_stufe("Kritisch")),
+  by = id
+]
 
 msk[grepl("Lange Waffe", attributes), lange_waffe := 1, by = id]
 
@@ -84,12 +100,16 @@ msk[grepl("Parierwaffe", attributes), parierwaffe := 1, by = id]
 msk[grepl("Primitiv", attributes), primitiv := 1, by = id]
 
 msk[grepl("Reiterwaffe", attributes),
-    reiterwaffe := re_matches(attributes, capture_stufe("Reiterwaffe")), by = id]
+  reiterwaffe := re_matches(attributes, capture_stufe("Reiterwaffe")),
+  by = id
+]
 
 msk[grepl("Rückkehrend", attributes), rueckkehrend := 1, by = id]
 
 msk[grepl("Scharf", attributes),
-    scharf := re_matches(attributes, capture_stufe("Scharf")), by = id]
+  scharf := re_matches(attributes, capture_stufe("Scharf")),
+  by = id
+]
 
 msk[grepl("Stumpf", attributes), stumpf := 1, by = id]
 
