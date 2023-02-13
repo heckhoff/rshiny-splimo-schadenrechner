@@ -615,6 +615,9 @@ server <- function(input, output, session) {
 
   ## Create objects ----
 
+  weapon_1_name <- "Waffe 1"
+  weapon_2_name <- "Waffe 2"
+  
   sel_weapon_1 <- reactive({
     data[name == input$select_weapon_1]
   })
@@ -657,7 +660,7 @@ server <- function(input, output, session) {
         success_level = input$success_lvl,
         att_massive = input$massive,
         att_versatile = input$wield
-      )[, weapon := "Waffe 1"]
+      )[, name := weapon_1_name]
     } else {
       req(any(c(input$d6, input$d10) != 0))
     }
@@ -673,7 +676,7 @@ server <- function(input, output, session) {
         success_level = input$success_lvl,
         att_massive = input$massive_2,
         att_versatile = input$wield_2
-      )[, weapon := "Waffe 2"]
+      )[, name := weapon_2_name]
     } else {
       req(any(c(input$d6_2, input$d10_2) != 0))
     }
@@ -816,7 +819,7 @@ server <- function(input, output, session) {
       }
     )
     x_axis_labels <- min(x[, damage]):max(x[, damage])
-    ggplot(data = x, aes(x = damage, y = probability, fill = weapon)) +
+    ggplot(data = x, aes(x = damage, y = probability, fill = name)) +
       geom_bar(
         stat = "identity",
         color = "black",
@@ -839,8 +842,9 @@ server <- function(input, output, session) {
         },
         breaks = pretty_breaks(n = 10)
       ) +
-      theme_classic(base_size = 20) +
-      theme(legend.position = "none")
+      labs(fill = "Waffe") +
+      theme_classic(base_size = 20) + 
+      theme(legend.position = ifelse(any("Waffe 2" %in% x$name), yes = "right", no = "none"))
   })
 
   # Plot Cumulative Probability Distribution
@@ -855,7 +859,7 @@ server <- function(input, output, session) {
     ggplot(data = x, aes(x = damage, y = switch(input$y_axis,
       cum_prob_min = cum_prob_min,
       cum_prob_max = cum_prob_max
-    ), fill = weapon)) +
+    ), fill = name)) +
       geom_bar(
         stat = "identity",
         color = "black",
@@ -884,8 +888,10 @@ server <- function(input, output, session) {
         },
         breaks = pretty_breaks(n = 10)
       ) +
+      labs(fill = "Waffe") +
       theme_classic(base_size = 20) +
-      theme(legend.position = "none")
+      # TODO Optimize in all plots
+      theme(legend.position = ifelse(any("Waffe 2" %in% x$name), yes = "right", no = "none"))
   })
 
   observe({
@@ -928,7 +934,7 @@ server <- function(input, output, session) {
         att_versatile = input$wield,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
-      )[, weapon := "Waffe 1"]
+      )[, name := "Waffe 1"]
     } else {
       req(any(c(input$d6, input$d10) != 0))
     }
@@ -946,7 +952,7 @@ server <- function(input, output, session) {
         att_versatile = input$wield_2,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
-      )[, weapon := "Waffe 2"]
+      )[, name := "Waffe 2"]
     } else {
       req(any(c(input$d6_2, input$d10_2) != 0))
     }
@@ -970,7 +976,7 @@ server <- function(input, output, session) {
         att_versatile = input$wield,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
-      )[, weapon := "Waffe 1"]
+      )[, name := "Waffe 1"]
     } else {
       req(any(c(input$d6, input$d10) != 0))
     }
@@ -988,7 +994,7 @@ server <- function(input, output, session) {
         att_versatile = input$wield_2,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
-      )[, weapon := "Waffe 2"]
+      )[, name := "Waffe 2"]
     } else {
       req(any(c(input$d6_2, input$d10_2) != 0))
     }
@@ -1013,7 +1019,7 @@ server <- function(input, output, session) {
     ggplot(data = x, aes(x = damage_reduction, y = switch(input$y_axis_dr,
       total = means,
       norm = means_per_tick
-    ), fill = weapon)) +
+    ), fill = name)) +
       geom_bar(
         stat = "identity",
         color = "black",
@@ -1035,10 +1041,11 @@ server <- function(input, output, session) {
         total = "Durchschn. Schaden",
         norm = "D. Schaden / Tick"
       )) +
+      labs(fill = "Waffe") +
       scale_x_continuous(breaks = x$damage_reduction) +
       scale_y_continuous(breaks = pretty_breaks(n = 10)) +
       theme_classic(base_size = 20) +
-      theme(legend.position = "none")
+      theme(legend.position = ifelse(any("Waffe 2" %in% x$name), yes = "right", no = "none"))
   })
 
   output$slvls_plot <- renderPlot({
@@ -1053,7 +1060,7 @@ server <- function(input, output, session) {
     ggplot(data = x, aes(x = success_lvls, y = switch(input$y_axis_dr,
       total = means,
       norm = means_per_tick
-    ), fill = weapon)) +
+    ), fill = name)) +
       geom_bar(
         stat = "identity",
         color = "black",
@@ -1075,16 +1082,22 @@ server <- function(input, output, session) {
         total = "Durchschn. Schaden",
         norm = "D. Schaden / Tick"
       )) +
+      labs(fill = "Waffe") +
       scale_x_continuous(breaks = x$success_lvls) +
       scale_y_continuous(breaks = pretty_breaks(n = 10)) +
       theme_classic(base_size = 20) +
-      theme(legend.position = "none")
+      theme(legend.position = ifelse(any("Waffe 2" %in% x$name), yes = "right", no = "none"))
   })
 
   # Update / Reset inputs ----
 
   ## Weapon 1 ----
 
+  observeEvent(
+    input$select_weapon_1,
+    {weapon_1_name <- sel_weapon_1()$name}
+  )
+  
   observeEvent(
     input$select_weapon_1,
     updateNumericInput(session, "d6", value = sel_weapon_1()$n_d6)
