@@ -1,5 +1,6 @@
 library(data.table)
 library(openxlsx)
+library(doParallel)
 
 options(scipen = 999)
 
@@ -65,7 +66,8 @@ combine_dice <- function(n_d6 = 0,
                          n_d10 = 0,
                          att_exact = 0,
                          att_sharp = 0,
-                         att_critical = 0) {
+                         att_critical = 0,
+                         cluster) {
   # browser()
   n_dice <- n_d6 + n_d10
   seq_d6 <-
@@ -88,9 +90,10 @@ combine_dice <- function(n_d6 = 0,
 
   seqs <- c(seq_d6, seq_d10)
 
+  clusterExport(cluster, varlist = c("seqs", "n_dice"), envir = environment())
   combinations <-
-    sort(apply(expand.grid(seqs), 1, function(x) {
-      sum(x[order(x, decreasing = TRUE)[seq_len(n_dice)]])
+    sort(parApply(cl = cluster, expand.grid(seqs), 1, function(x) {
+      sum(x[order(x, decreasing = TRUE, method = "shell")[seq_len(n_dice)]])
     })) # FIXME sort only if necessary
 
   # TODO Does simplyfing it like this change anything?

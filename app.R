@@ -10,6 +10,9 @@ library(stringi)
 
 source("damage_calculation.R")
 options(encoding = "UTF-8")
+# cl <- makeCluster(3)
+# registerDoParallel(cl)
+# debug(combine_dice)
 
 # Predefine y-axis plot choices (necessary due to special symbol in named list)
 y_axis_choice <- setNames(
@@ -551,12 +554,15 @@ Schaden um 3 Punkte.",
   )
 )
 
-
+# Backend ----
 server <- function(input, output, session) {
   # Hide objects
   hide("weapon_toggle")
   hide("wield")
   hide("wield_2")
+  # onStop(gc())
+  # onStop(stopCluster(cl))
+  # onStop(stopImplicitCluster())
 
   # Tab 1 ----
 
@@ -631,7 +637,8 @@ server <- function(input, output, session) {
         n_d10 = input$d10,
         att_exact = input$exact,
         att_sharp = input$sharp,
-        att_critical = input$critical
+        att_critical = input$critical,
+        cluster = cl
       )
     })
 
@@ -643,7 +650,8 @@ server <- function(input, output, session) {
         n_d10 = input$d10_2,
         att_exact = input$exact_2,
         att_sharp = input$sharp_2,
-        att_critical = input$critical_2
+        att_critical = input$critical_2,
+        cluster = cl
       )
     })
 
@@ -1216,4 +1224,4 @@ server <- function(input, output, session) {
 
 
 # Run the application
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server, on.exit  )
