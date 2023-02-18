@@ -520,7 +520,7 @@ Schaden um 3 Punkte.",
           "Wahrscheinlichkeiten",
           value = 1,
           plotOutput("dist_plot", height = "340px"),
-          br(),
+          # br(),
           selectInput("y_axis",
             "Darstellung der kumulierten Grafik",
             choices = y_axis_choice
@@ -530,9 +530,9 @@ Schaden um 3 Punkte.",
         tabPanel(
           "Schadensreduktion",
           value = 2,
-          plotOutput("dmgred_plot", height = "330px"),
-          br(),
-          plotOutput("slvls_plot", height = "330px"),
+          plotOutput("dmgred_plot", height = "340px"),
+          # br(),
+          plotOutput("slvls_plot", height = "340px"),
           selectInput(
             "y_axis_dr",
             "Art des durchschnittlichen Schadens",
@@ -614,15 +614,83 @@ server <- function(input, output, session) {
 
   ## Create objects ----
 
-  weapon_1_name <- "Waffe 1"
-  weapon_2_name <- "Waffe 2"
-  
+  weapon_1_name <- reactiveVal(value = "Waffe 1")
+  weapon_2_name <- reactiveVal(value = "Waffe 2")
+
+  weapon_colors <-
+    reactive({
+      setNames(
+        c("#56B4E9", "#D55E00"),
+        c(weapon_1_name(), weapon_2_name())
+      )
+    })
+
   sel_weapon_1 <- reactive({
-    data[name == input$select_weapon_1]
+    data[name %in% input$select_weapon_1, .SD, .SDcols = c(
+      "n_d6",
+      "n_d10",
+      "flat_mod",
+      "speed",
+      "durchdringung",
+      "exakt",
+      "kritisch",
+      "scharf",
+      "vielseitig",
+      "wuchtig"
+    )]
   })
 
   sel_weapon_2 <- reactive({
-    data[name == input$select_weapon_2]
+    data[name %in% input$select_weapon_2, .SD, .SDcols = c(
+      "n_d6",
+      "n_d10",
+      "flat_mod",
+      "speed",
+      "durchdringung",
+      "exakt",
+      "kritisch",
+      "scharf",
+      "vielseitig",
+      "wuchtig"
+    )]
+  })
+
+  input_weapon_1 <- reactive({
+    data.table(
+      n_d6 = input$d6,
+      n_d10 = input$d10,
+      flat_mod = input$flat,
+      speed = input$speed,
+      durchdringung = input$penetration,
+      exakt = input$exact,
+      kritisch = input$critical,
+      scharf = input$sharp,
+      vielseitig = input$versatile,
+      wuchtig = input$massive
+    )
+  })
+
+  input_weapon_2 <- reactive({
+    data.table(
+      n_d6 = input$d6_2,
+      n_d10 = input$d10_2,
+      flat_mod = input$flat_2,
+      speed = input$speed_2,
+      durchdringung = input$penetration_2,
+      exakt = input$exact_2,
+      kritisch = input$critical_2,
+      scharf = input$sharp_2,
+      vielseitig = input$versatile_2,
+      wuchtig = input$massive_2
+    )
+  })
+
+  preset_input_diff_1 <- reactive({
+    isTRUE(all.equal(sel_weapon_1(), input_weapon_1()))
+  })
+
+  preset_input_diff_2 <- reactive({
+    isTRUE(all.equal(sel_weapon_2(), input_weapon_2()))
   })
 
   comb_1 <-
@@ -659,8 +727,9 @@ server <- function(input, output, session) {
         success_level = input$success_lvl,
         att_massive = input$massive,
         att_versatile = input$wield
-      )[, name := weapon_1_name]
+      )[, name := factor(x = weapon_1_name())]
     } else {
+      # TODO Is this correct?
       req(any(c(input$d6, input$d10) != 0))
     }
   })
@@ -675,7 +744,7 @@ server <- function(input, output, session) {
         success_level = input$success_lvl,
         att_massive = input$massive_2,
         att_versatile = input$wield_2
-      )[, name := weapon_2_name]
+      )[, name := factor(weapon_2_name())]
     } else {
       req(any(c(input$d6_2, input$d10_2) != 0))
     }
@@ -824,7 +893,7 @@ server <- function(input, output, session) {
         color = "black",
         position = position_dodge2(preserve = "single")
       ) +
-      scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
+      scale_fill_manual(values = weapon_colors()) +
       geom_text(
         aes(label = round(probability * 100, 1)),
         vjust = -0.3,
@@ -839,11 +908,16 @@ server <- function(input, output, session) {
         labels = function(x) {
           paste0(x * 100, "%")
         },
-        breaks = pretty_breaks(n = 10)
+        breaks = pretty_breaks(n = 10),
+        expand = expansion(mult = c(0, 0.08))
       ) +
       labs(fill = "Waffe") +
-      theme_classic(base_size = 20) + 
-      theme(legend.position = ifelse(any("Waffe 2" %in% x$name), yes = "right", no = "none"))
+      theme_classic(base_size = 20) +
+      theme(legend.position = ifelse(
+        any(weapon_2_name() %in% x$name),
+        yes = "bottom",
+        no = "none"
+      ))
   })
 
   # Plot Cumulative Probability Distribution
@@ -864,7 +938,7 @@ server <- function(input, output, session) {
         color = "black",
         position = position_dodge2(preserve = "single")
       ) +
-      scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
+      scale_fill_manual(values = weapon_colors()) +
       geom_text(
         aes(label = switch(input$y_axis,
           cum_prob_min = round(cum_prob_min * 100, 1),
@@ -885,12 +959,17 @@ server <- function(input, output, session) {
         labels = function(x) {
           paste0(x * 100, "%")
         },
-        breaks = pretty_breaks(n = 10)
+        breaks = pretty_breaks(n = 10),
+        expand = expansion(mult = c(0, 0.08))
       ) +
       labs(fill = "Waffe") +
       theme_classic(base_size = 20) +
       # TODO Optimize in all plots
-      theme(legend.position = ifelse(any("Waffe 2" %in% x$name), yes = "right", no = "none"))
+      theme(legend.position = ifelse(
+        any(weapon_2_name() %in% x$name),
+        yes = "bottom",
+        no = "none"
+      ))
   })
 
   observe({
@@ -933,7 +1012,7 @@ server <- function(input, output, session) {
         att_versatile = input$wield,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
-      )[, name := "Waffe 1"]
+      )[, name := weapon_1_name()]
     } else {
       req(any(c(input$d6, input$d10) != 0))
     }
@@ -951,7 +1030,7 @@ server <- function(input, output, session) {
         att_versatile = input$wield_2,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
-      )[, name := "Waffe 2"]
+      )[, name := weapon_2_name()]
     } else {
       req(any(c(input$d6_2, input$d10_2) != 0))
     }
@@ -975,7 +1054,7 @@ server <- function(input, output, session) {
         att_versatile = input$wield,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
-      )[, name := "Waffe 1"]
+      )[, name := weapon_1_name()]
     } else {
       req(any(c(input$d6, input$d10) != 0))
     }
@@ -993,7 +1072,7 @@ server <- function(input, output, session) {
         att_versatile = input$wield_2,
         lower_bound = input$lower_bound,
         upper_bound = input$upper_bound
-      )[, name := "Waffe 2"]
+      )[, name := weapon_2_name()]
     } else {
       req(any(c(input$d6_2, input$d10_2) != 0))
     }
@@ -1024,7 +1103,7 @@ server <- function(input, output, session) {
         color = "black",
         position = position_dodge2(preserve = "single")
       ) +
-      scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
+      scale_fill_manual(values = weapon_colors()) +
       geom_text(
         aes(label = switch(input$y_axis_dr,
           total = round(means, 1),
@@ -1042,9 +1121,16 @@ server <- function(input, output, session) {
       )) +
       labs(fill = "Waffe") +
       scale_x_continuous(breaks = x$damage_reduction) +
-      scale_y_continuous(breaks = pretty_breaks(n = 10)) +
+      scale_y_continuous(
+        breaks = pretty_breaks(n = 10),
+        expand = expansion(mult = c(0, 0.08))
+      ) +
       theme_classic(base_size = 20) +
-      theme(legend.position = ifelse(any("Waffe 2" %in% x$name), yes = "right", no = "none"))
+      theme(legend.position = ifelse(
+        any(weapon_2_name() %in% x$name),
+        yes = "bottom",
+        no = "none"
+      ))
   })
 
   output$slvls_plot <- renderPlot({
@@ -1065,12 +1151,12 @@ server <- function(input, output, session) {
         color = "black",
         position = position_dodge2(preserve = "single")
       ) +
-      scale_fill_manual(values = c("#56B4E9", "#D55E00")) +
+      scale_fill_manual(values = weapon_colors()) +
       geom_text(
         aes(label = switch(input$y_axis_dr,
           total = round(means, 1),
           # FIXME In DT
-          norm = round(means_per_tick, 1)
+          norm = round(means_per_tick, 2)
         ), fontface = 2),
         vjust = -0.3,
         position = position_dodge(width = 0.9)
@@ -1083,20 +1169,26 @@ server <- function(input, output, session) {
       )) +
       labs(fill = "Waffe") +
       scale_x_continuous(breaks = x$success_lvls) +
-      scale_y_continuous(breaks = pretty_breaks(n = 10)) +
+      scale_y_continuous(
+        breaks = pretty_breaks(n = 10),
+        expand = expansion(mult = c(0, 0.08))
+      ) +
       theme_classic(base_size = 20) +
-      theme(legend.position = ifelse(any("Waffe 2" %in% x$name), yes = "right", no = "none"))
+      theme(legend.position = ifelse(
+        any(weapon_2_name() %in% x$name),
+        yes = "bottom",
+        no = "none"
+      ))
   })
 
   # Update / Reset inputs ----
 
   ## Weapon 1 ----
 
-  observeEvent(
-    input$select_weapon_1,
-    {weapon_1_name <- sel_weapon_1()$name}
-  )
-  
+  observeEvent(input$select_weapon_1, {
+    weapon_1_name(input$select_weapon_1)
+  })
+
   observeEvent(
     input$select_weapon_1,
     updateNumericInput(session, "d6", value = sel_weapon_1()$n_d6)
@@ -1155,7 +1247,19 @@ server <- function(input, output, session) {
     updateMaterialSwitch(session, "versatile", value = sel_weapon_1()$vielseitig)
   )
 
+  observeEvent(preset_input_diff_1(), {
+    if (preset_input_diff_1() == FALSE) {
+      weapon_1_name("Waffe 1")
+    } else {
+      weapon_1_name(input$select_weapon_1)
+    }
+  })
+
   ## Weapon 2 ----
+
+  observeEvent(input$select_weapon_2, {
+    weapon_2_name(input$select_weapon_2)
+  })
 
   observeEvent(
     input$select_weapon_2,
@@ -1215,14 +1319,20 @@ server <- function(input, output, session) {
     updateMaterialSwitch(session, "versatile_2", value = sel_weapon_2()$vielseitig)
   )
 
-
-  observeEvent(input$reset_input, {
-    reset("side-panel")
-    reset("weapon_toggle") # FIXME Not working
+  observeEvent(preset_input_diff_2(), {
+    if (preset_input_diff_2() == FALSE) {
+      weapon_2_name("Waffe 2")
+    } else {
+      weapon_2_name(input$select_weapon_2)
+    }
   })
-  observeEvent(input$reset_input_2, {
-    reset("side-panel")
-    reset("weapon_toggle") # FIXME Not working
+
+  # TODO Refactor all to bindEvent()
+  observeEvent(input$reset_input, {
+    reset()
+    # reset("weapon_toggle") # FIXME Not working
+    weapon_1_name("Waffe 1")
+    weapon_2_name("Waffe 2")
   })
 }
 
