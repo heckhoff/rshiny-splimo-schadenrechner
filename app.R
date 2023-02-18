@@ -54,28 +54,44 @@ ui <- fluidPage(
         c(1:10)
       ),
       id = "side-panel",
+      fluidRow(
+        div(
+          class = "col-xs-6",
+          actionButton(
+            "weapon_toggle",
+            "Weitere Waffe",
+            icon = icon("plus"),
+            style = "font-size:115%;"
+          ),
+          style = "padding-bottom:15px;",
+          align = "left"
+        ),
+        div(
+          class = "col-xs-6",
+          actionButton("reset_input", "",
+            icon = icon("xmark"),
+            style = "font-size:115%;"
+          ),
+          style = "padding-bottom:15px;",
+          align = "right"
+        )
+      ),
       conditionalPanel(
         condition = "input.weapon_toggle % 2 == 0",
-        fluidRow(
-          column(
-            10,
-            pickerInput(
-              "select_weapon_1",
-              choices = data[, name],
-              multiple = TRUE,
-              options = pickerOptions(
-                maxOptions = 1,
-                liveSearch = TRUE,
-                noneSelectedText = "Waffenpreset laden"
-              ),
-              width = "100%"
-            )
-          ),
-          column(
-            2, actionButton("reset_input", "", icon = icon("xmark"))
-          ),
-          align = "right"
-        ),
+        fluidRow(column(
+          12,
+          pickerInput(
+            "select_weapon_1",
+            choices = data[, name],
+            multiple = TRUE,
+            options = pickerOptions(
+              maxOptions = 1,
+              liveSearch = TRUE,
+              noneSelectedText = "Waffenpreset laden"
+            ),
+            width = "100%"
+          )
+        )),
         fluidRow(
           column(
             4,
@@ -114,22 +130,20 @@ ui <- fluidPage(
             value = 1
           )
         )),
-
         ## Textoutput ----
         htmlOutput("weapon"),
         htmlOutput("mean_dmg"),
         htmlOutput("mean_dmg_per_tick"),
         htmlOutput("sd_dmg"),
         br(),
-
         ## Waffenmerkmale ----
         fluidRow(column(
-          12,
+          6,
           actionButton(
             "properties_toggle",
             "Waffenmerkmale",
             icon = icon("minus"),
-            width = "46%",
+            width = "100%",
             style = "font-size:125%;"
           )
         )),
@@ -243,7 +257,7 @@ Schaden um 3 Punkte.",
         condition = "input.weapon_toggle % 2 == 1",
         fluidRow(
           column(
-            10,
+            12,
             pickerInput(
               "select_weapon_2",
               choices = data[, name],
@@ -255,9 +269,6 @@ Schaden um 3 Punkte.",
               ),
               width = "100%"
             )
-          ),
-          column(
-            2, actionButton("reset_input_2", "", icon = icon("xmark"))
           ),
           align = "right"
         ),
@@ -309,12 +320,12 @@ Schaden um 3 Punkte.",
 
         ## Waffenmerkmale ----
         fluidRow(column(
-          12,
+          6,
           actionButton(
             "properties_toggle_2",
             "Waffenmerkmale",
             icon = icon("minus"),
-            width = "46%",
+            width = "100%",
             style = "font-size:125%;"
           )
         )),
@@ -386,8 +397,8 @@ Schaden um 3 Punkte.",
             )
           ),
           fluidRow(
-            column(
-              6,
+            div(
+              class = "col-xs-6",
               materialSwitch("massive_2",
                 "Wuchtig",
                 value = FALSE,
@@ -399,8 +410,8 @@ Schaden um 3 Punkte.",
                 trigger = "hover"
               )
             ),
-            column(
-              6,
+            div(
+              class = "col-xs-6",
               materialSwitch(
                 "versatile_2",
                 "Vielseitig",
@@ -424,28 +435,16 @@ Schaden um 3 Punkte.",
         ),
         br()
       ),
-      fluidRow(
-        column(
-          6,
-          actionButton(
-            "modifiers_toggle",
-            "Weitere Parameter",
-            icon = icon("plus"),
-            width = "100%",
-            style = "font-size:125%;"
-          )
-        ),
-        column(
-          6,
-          actionButton(
-            "weapon_toggle",
-            "Weitere Waffe",
-            icon = icon("plus"),
-            style = "font-size:125%;"
-          ),
-          align = "right"
+      fluidRow(column(
+        6,
+        actionButton(
+          "modifiers_toggle",
+          "Weitere Parameter",
+          icon = icon("plus"),
+          width = "100%",
+          style = "font-size:125%;"
         )
-      ),
+      )),
       # Schadensreduktion ----
       conditionalPanel(
         condition = "input.tab_selected == 1 & input.modifiers_toggle % 2 == 1",
@@ -578,15 +577,15 @@ server <- function(input, output, session) {
       }
     )
   })
-  
+
   observeEvent(input$properties_toggle_2, {
     updateActionButton(session,
-                       "properties_toggle_2",
-                       icon = if ((input$properties_toggle_2 %% 2) == 0) {
-                         icon("minus")
-                       } else {
-                         icon("plus")
-                       }
+      "properties_toggle_2",
+      icon = if ((input$properties_toggle_2 %% 2) == 0) {
+        icon("minus")
+      } else {
+        icon("plus")
+      }
     )
   })
 
@@ -697,7 +696,7 @@ server <- function(input, output, session) {
   output$weapon <- renderText({
     print_weapon_txt()
   })
-  
+
   print_weapon_txt_2 <-
     reactive(
       paste0(
