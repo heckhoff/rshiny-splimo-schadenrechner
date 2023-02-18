@@ -545,7 +545,7 @@ Schaden um 3 Punkte.",
         ),
         id = "tab_selected"
       ),
-      width = 7
+      width = 8
     )
   )
 )
