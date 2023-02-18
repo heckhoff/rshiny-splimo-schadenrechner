@@ -94,7 +94,7 @@ ui <- fluidPage(
         )),
         fluidRow(
           column(
-            4,
+            6,
             numericInput(
               "d6",
               "Anzahl W6",
@@ -104,7 +104,7 @@ ui <- fluidPage(
             )
           ),
           column(
-            4,
+            6,
             numericInput(
               "d10",
               "Anzahl W10",
@@ -112,22 +112,26 @@ ui <- fluidPage(
               max = 5,
               value = 0
             )
-          ),
-          column(
-            4,
-            numericInput("flat",
-              "Modifikator",
-              value = 0
-            )
           )
         ),
         fluidRow(column(
-          12,
+          6,
+          numericInput("flat",
+            "Bonus/Malus",
+            value = 0
+          )
+        ), column(
+          6,
           numericInput(
             "speed",
-            "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
+            "Waffengeschwindigkeit",
             min = 1,
             value = 1
+          ),
+          bsTooltip(
+            id = "speed",
+            title = "inklusive weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
+            trigger = "hover"
           )
         )),
         ## Textoutput ----
@@ -274,7 +278,7 @@ Schaden um 3 Punkte.",
         ),
         fluidRow(
           column(
-            4,
+            6,
             numericInput(
               "d6_2",
               "Anzahl W6",
@@ -284,7 +288,7 @@ Schaden um 3 Punkte.",
             )
           ),
           column(
-            4,
+            6,
             numericInput(
               "d10_2",
               "Anzahl W10",
@@ -292,24 +296,31 @@ Schaden um 3 Punkte.",
               max = 5,
               value = 0
             )
-          ),
-          column(
-            4,
-            numericInput("flat_2",
-              "Modifikator",
-              value = 0
-            )
           )
         ),
-        fluidRow(column(
-          12,
-          numericInput(
-            "speed_2",
-            "Waffengeschwindigkeit inkl. weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
-            min = 1,
-            value = 1
+        fluidRow(
+          column(
+            6,
+            numericInput("flat_2",
+              "Bonus/Malus",
+              value = 0
+            )
+          ),
+          column(
+            6,
+            numericInput(
+              "speed_2",
+              "Waffengeschwindigkeit",
+              min = 1,
+              value = 1
+            )
+          ),
+          bsTooltip(
+            id = "speed_2",
+            title = "inklusive weiterer Modifikatoren (z.B. +3 Ticks bei Fernkampf)",
+            trigger = "hover"
           )
-        )),
+        ),
 
         ## Textoutput ----
         htmlOutput("weapon_2"),
