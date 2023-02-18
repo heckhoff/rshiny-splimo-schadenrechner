@@ -283,7 +283,7 @@ Schaden um 3 Punkte.",
               "d6_2",
               "Anzahl W6",
               min = 0,
-              max = 8,
+              max = 6,
               value = 0
             )
           ),
