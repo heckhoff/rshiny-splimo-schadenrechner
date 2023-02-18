@@ -138,12 +138,12 @@ ui <- fluidPage(
         br(),
         ## Waffenmerkmale ----
         fluidRow(column(
-          6,
+          12,
           actionButton(
             "properties_toggle",
             "Waffenmerkmale",
             icon = icon("minus"),
-            width = "100%",
+            width = "200px",
             style = "font-size:125%;"
           )
         )),
@@ -320,12 +320,12 @@ Schaden um 3 Punkte.",
 
         ## Waffenmerkmale ----
         fluidRow(column(
-          6,
+          12,
           actionButton(
             "properties_toggle_2",
             "Waffenmerkmale",
             icon = icon("minus"),
-            width = "100%",
+            width = "200px",
             style = "font-size:125%;"
           )
         )),
@@ -436,12 +436,12 @@ Schaden um 3 Punkte.",
         br()
       ),
       fluidRow(column(
-        6,
+        12,
         actionButton(
           "modifiers_toggle",
           "Weitere Parameter",
           icon = icon("plus"),
-          width = "100%",
+          width = "200px",
           style = "font-size:125%;"
         )
       )),
@@ -508,7 +508,7 @@ Schaden um 3 Punkte.",
         )
       ),
       br(),
-      width = 3
+      width = 4
     ),
 
 
@@ -545,7 +545,7 @@ Schaden um 3 Punkte.",
         ),
         id = "tab_selected"
       ),
-      width = 9
+      width = 7
     )
   )
 )
