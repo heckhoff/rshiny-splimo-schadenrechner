@@ -97,7 +97,7 @@ append_calculation <- function(calculation, db) {
 
 # Apply over all possible argument combinations
 argument_combs <- create_argument_combinations(
-  d6 = 0L:3L,
+  d6 = 0L:5L,
   d10 = 0L,
   exact = 0L:3L,
   sharp = 0L:5L,
