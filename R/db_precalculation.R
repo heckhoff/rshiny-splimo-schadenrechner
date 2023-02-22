@@ -1,38 +1,33 @@
-library(DBI)
-library(RSQLite)
-library(data.table)
-library(doParallel)
-
-cl <- makeCluster(3,
+# cl <- makeCluster(3,
 #   type = "PSOCK"
 # )
-type = "FORK") # only use if on Linux-system
+# type = "FORK") # only use if on Linux-system
 
-registerDoParallel(cl)
+# registerDoParallel(cl)
 
-source("damage_calculation.R")
+# source("damage_calculation.R")
 
 # Create/Connect database ----
-splimo_db <-
-  dbConnect(RSQLite::SQLite(), "data/splimo_db.sqlite")
-
-# Create table
-# dbRemoveTable(splimo_db, "dice_combinations")
-
-dbCreateTable(
-  conn = splimo_db,
-  name = "dice_combinations",
-  fields = c(
-    comb_index = "INTEGER",
-    comb_id = "INTEGER",
-    n_d6 = "INTEGER",
-    n_d10 = "INTEGER",
-    att_exact = "INTEGER",
-    att_sharp = "INTEGER",
-    att_critical = "INTEGER",
-    combinations = "BLOB"
-  )
-)
+# splimo_db <-
+#   dbConnect(RSQLite::SQLite(), "data/splimo_db.sqlite")
+#
+# # Create table
+# # dbRemoveTable(splimo_db, "dice_combinations")
+#
+# dbCreateTable(
+#   conn = splimo_db,
+#   name = "dice_combinations",
+#   fields = c(
+#     comb_index = "INTEGER",
+#     comb_id = "INTEGER",
+#     n_d6 = "INTEGER",
+#     n_d10 = "INTEGER",
+#     att_exact = "INTEGER",
+#     att_sharp = "INTEGER",
+#     att_critical = "INTEGER",
+#     combinations = "BLOB"
+#   )
+# )
 
 # Define functions ----
 create_argument_combinations <- function(d6,
@@ -96,45 +91,46 @@ append_calculation <- function(calculation, db) {
 }
 
 # Apply over all possible argument combinations
-argument_combs <- create_argument_combinations(
-  d6 = 0L:5L,
-  d10 = 0L,
-  exact = 0L:3L,
-  sharp = 0L:5L,
-  critical = 0L:5L
-)
+# argument_combs <- create_argument_combinations(
+#   d6 = 0L:5L,
+#   d10 = 0L,
+#   exact = 0L:3L,
+#   sharp = 0L:5L,
+#   critical = 0L:5L
+# )
+#
+# # Index combinations
+# argument_combs[, comb_index := seq_len(nrow(argument_combs))]
+# argument_combs[, comb_id := do.call(paste0, .SD), .SDcols = c(
+#   "n_d6",
+#   "n_d10",
+#   "att_exact",
+#   "att_sharp",
+#   "att_critical"
+# )]
+# argument_combs[, comb_id := as.integer(comb_id)]
 
-# Index combinations
-argument_combs[, comb_index := seq_len(nrow(argument_combs))]
-argument_combs[, comb_id := do.call(paste0, .SD), .SDcols = c(
-  "n_d6",
-  "n_d10",
-  "att_exact",
-  "att_sharp",
-  "att_critical"
-)]
-argument_combs[, comb_id := as.integer(comb_id)]
 
-
-apply(
-  X = argument_combs,
-  MARGIN = 1,
-  FUN = function(arguments, db, cluster) {
-    print(paste("Starting calculation", unlist(arguments["comb_index"])))
-    print(arguments)
-    calculation <-
-      calculate_argument_combination(arguments = arguments, cluster = cluster)
-    append_calculation(calculation = calculation, db = db)
-    rm(calculation)
-    gc()
-    print(paste("Finished calculation", unlist(arguments["comb_index"])))
-  },
-  db = splimo_db,
-  cluster = cl
-)
+# apply(
+#   X = argument_combs,
+#   MARGIN = 1,
+#   FUN = function(arguments, db, cluster) {
+#     print(paste("Starting calculation", unlist(arguments["comb_index"])))
+#     print(arguments)
+#     calculation <-
+#       calculate_argument_combination(arguments = arguments, cluster = cluster)
+#     append_calculation(calculation = calculation, db = db)
+#     rm(calculation)
+#     gc()
+#     print(paste("Finished calculation", unlist(arguments["comb_index"])))
+#   },
+#   db = splimo_db,
+#   cluster = cl
+# )
 
 # test <- dbReadTable(splimo_db, "dice_combinations")
 # unserialize(unlist(test$combinations[16]))
-dbDisconnect(splimo_db)
 
-stopCluster(cl)
+# dbDisconnect(splimo_db)
+
+# stopCluster(cl)

@@ -1,6 +1,3 @@
-library(data.table)
-library(openxlsx)
-
 options(scipen = 999)
 
 # Online Resources ----
@@ -56,8 +53,9 @@ options(scipen = 999)
 
 # Import data ----
 
-data <- read.xlsx("data/waffenliste_mondstahlklingen.xlsx", sheet = 1)
-setDT(data)
+# weapon_data <- read.xlsx("data/waffenliste_mondstahlklingen.xlsx", sheet = 1)
+# data <- copy(weapon_data)
+# setDT(weapon_data)
 
 # Dice Calculations ----
 
