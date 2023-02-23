@@ -93,7 +93,10 @@ combine_dice <- function(n_d6 = 0,
         sum(x[order(x, decreasing = TRUE)[seq_len(n_dice)]])
       })) # FIXME sort only if necessary
   } else {
-    clusterExport(cluster, varlist = c("seqs", "n_dice"), envir = environment())
+    clusterExport(cluster,
+      varlist = c("seqs", "n_dice"),
+      envir = environment()
+    )
     combinations <-
       sort(parApply(cl = cluster, expand.grid(seqs), 1, function(x) {
         sum(x[order(x, decreasing = TRUE, method = "shell")[seq_len(n_dice)]])
@@ -226,4 +229,38 @@ create_slvls_table <- function(combinations,
     )
 
   return(slvls_table)
+}
+
+calculate_probabilities <- function(n_d6 = 0,
+                                    n_d10 = 0,
+                                    flat_mod = 0,
+                                    att_exact = 0,
+                                    att_sharp = 0,
+                                    att_critical = 0,
+                                    att_penetration = 0,
+                                    att_massive = FALSE,
+                                    att_versatile = FALSE,
+                                    damage_reduction = 0,
+                                    success_level = 0,
+                                    cluster = NULL) {
+  combinations <- combine_dice(
+    n_d6 = n_d6,
+    n_d10 = n_d10,
+    att_exact = att_exact,
+    att_sharp = att_sharp,
+    att_critical = att_critical,
+    cluster = cluster
+  )
+
+  probabilities <- create_prob_table(
+    combinations = combinations,
+    flat_mod = flat_mod,
+    damage_reduction = damage_reduction,
+    att_penetration = att_penetration,
+    success_level = success_level,
+    att_massive = att_massive,
+    att_versatile = att_versatile
+  )
+
+  return(probabilities)
 }
